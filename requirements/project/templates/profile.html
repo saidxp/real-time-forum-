@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/profile.css">
+    <link rel="icon" href="/static/svg/favicon.svg" type="image/svg">
+    <title>Profile</title>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header__logo">
+            <a href="/" class="header__logo-link">
+                <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+            </a>
+        </div>
+        <div class="logout">
+            <a href="/logout">Logout</a>
+        </div>
+    </header>
+
+    <div class="profile">
+        <div>
+            Username : <span class="to-right">{{.Username}} <a href="/profile/update/username"><span
+                        class="update-icon">↻</span></a></span>
+        </div>
+        <div>
+            Email : <span class="to-right">{{.Email}} <a href="/profile/update/email"><span
+                        class="update-icon">↻</span></a></span>
+        </div>
+        <div>
+            Password <span class="to-right">***********<a href="/profile/update/password"><span
+                        class="update-icon">↻</span></a></span>
+        </div>
+
+        <a class="delete" href="/profile/delete">Delete This Account</a>
+    </div>
+
+    <footer class="footer">
+        <div class="footer__container">
+          <p class="footer__text">
+            &copy; 2025 FORUM — Built with 💙 by the Forum Team
+          </p>
+        </div>
+      </footer>
+</body>
+
+</html>

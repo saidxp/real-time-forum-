@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/form.css">
+    <link rel="icon" href="/static/svg/favicon.svg" type="image/svg">
+    <title>Delete</title>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header__logo">
+            <a href="/" class="header__logo-link">
+                <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+            </a>
+        </div>
+        <div class="logout">
+            <a href="/logout">Logout</a>
+        </div>
+    </header>
+    </header>
+    
+    <div class="form-container">
+        <form method="post">
+            <input type="password" name="password" id="password" placeholder="Enter Your Password" minlength="8" maxlength="72" required><br>
+            {{if .Error}}
+            <div class="error-container">
+                {{.Message}}
+            </div>
+            {{end}}
+            <button formaction="/profile/delete/confirm">delete</button>
+        </form>
+    </div>
+    <footer>
+        <div class="footer">
+            <p>&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>
+        </div>
+    </footer>
+</body>
+
+</html>

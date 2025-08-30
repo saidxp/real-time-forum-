@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/forms.css" />
+    <link rel="icon" href="/static/svg/favicon.svg" type="image/svg" />
+    <title>Post</title>
+  </head>
+
+  <body>
+    <header class="header">
+      <div class="header__logo">
+        <a href="/" class="header__logo-link">
+          <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+        </a>
+      </div>
+
+      <div class="header__filter">
+        <h2>Create a new post</h2>
+      </div>
+
+      <!-- <nav class="header__profile-nav" aria-label="User actions">
+      {{if .Authenticated}}
+      <a href="/newPost" class="header__profile-link header__profile-link--new-post" aria-label="Create new post">
+        <img src="/static/svg/pencil-line.svg" alt="New post icon" class="header__profile-icon" />
+      </a>
+      <a href="/logout" class="header__profile-link header__profile-link--logout" aria-label="Logout">
+        <img src="/static/svg/log-out.svg" alt="Logout icon" class="header__profile-icon" />
+      </a>
+      <a href="/profile" class="header__profile-link header__profile-link--profile" aria-label="User profile">
+        <img src="/static/svg/circle-user-round.svg" alt="User profile icon" class="header__profile-icon" />
+      </a>
+      {{else}}
+      <a href="/register" class="header__auth-link">Sign Up</a>
+      <a href="/login" class="header__auth-link">Login</a>
+      {{end}}
+    </nav> -->
+    </header>
+
+    {{if .Error}}
+    <div class="error-container">{{.Message}}</div>
+    {{end}}
+
+    <div class="container">
+      <form action="/newPost" method="POST" class="postForm">
+        <img src="/static/svg/writer.svg" alt="Create post" />
+        <h2>Create a Post</h2>
+        <h1>New Forum Post</h1>
+
+        <div class="formfield">
+          <label for="title">Post Title</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            placeholder="Title..."
+            minlength="10"
+            maxlength="70"
+            required
+          />
+        </div>
+
+        <div class="formfield">
+          <label for="content">Content</label>
+          <textarea
+            id="content"
+            name="content"
+            placeholder="Insert content here..."
+            minlength="1"
+            maxlength="10000"
+            required
+          ></textarea>
+        </div>
+
+        <div class="formfield">
+          <label>Select Categories</label>
+          <div class="box-group">
+            {{range $key, $value := .Fields}}
+            <div>
+              <input
+                type="checkbox"
+                name="Categories"
+                id="{{$key}}"
+                value="{{$key}}"
+              />
+              <label for="{{$key}}">{{$key}}</label>
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <input type="submit" value="Post" />
+      </form>
+    </div>
+
+    <footer>
+      <div class="footer-container">
+        <p>&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>
+      </div>
+    </footer>
+  </body>
+</html>
