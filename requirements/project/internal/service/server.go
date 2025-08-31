@@ -23,7 +23,6 @@ func InitDependencies() {
 
 func forumMux() *http.ServeMux {
 	forumux := http.NewServeMux()
- 
 
 	// root mux ====> i will check it roooooooooooot !!! >>
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
@@ -32,29 +31,29 @@ func forumMux() *http.ServeMux {
 	// <=========================|-|=============================>
 	// Her i will get filter post or post !!
 	forumux.HandleFunc("/api/posts", middleware.InjectUser(handler.PostsHandlerApi))
-
+	
 	// authontication mux
-	forumux.HandleFunc("/login", middleware.InjectUser(auth.SwitchLogin))
+	forumux.HandleFunc("/login", middleware.InjectUser(auth.SubmitLogin))
+	
+	// her i will check login ||||| ///
 	forumux.HandleFunc("/register", middleware.InjectUser(auth.SwitchRegister))
 	forumux.HandleFunc("/logout", auth.LogoutHandler)
 
 	// profile mux
-	forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
-	forumux.HandleFunc("/profile/update/{value}", middleware.AuthMidleware(handler.UpddateProfile))
-	forumux.HandleFunc("/profile/update/{value}/save", middleware.AuthMidleware(handler.SaveChanges))
-	forumux.HandleFunc("/profile/delete", middleware.AuthMidleware(handler.ServeDelete))
-	forumux.HandleFunc("POST /profile/delete/confirm", middleware.AuthMidleware(handler.DeleteConfirmation))
+	//forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
+	//forumux.HandleFunc("/profile/update/{value}", middleware.AuthMidleware(handler.UpddateProfile))
+	//forumux.HandleFunc("/profile/update/{value}/save", middleware.AuthMidleware(handler.SaveChanges))
+	//forumux.HandleFunc("/profile/delete", middleware.AuthMidleware(handler.ServeDelete))
+	//forumux.HandleFunc("POST /profile/delete/confirm", middleware.AuthMidleware(handler.DeleteConfirmation))
 
 	// new post mux
 	forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.NewPostHandler))
 
 	// like dislike
-	forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
-	forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
-
+	//forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
+	//forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
-
 	// post
 	forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 

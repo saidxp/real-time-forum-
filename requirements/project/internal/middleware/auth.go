@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	auth "forum/internal/auth"
+	//auth "forum/internal/auth"
 	db "forum/internal/db"
 	forumerror "forum/internal/error"
 	repo "forum/internal/repository"
@@ -15,7 +15,7 @@ func AuthMidleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// At mdileware i will check if he is login
 		if err != nil || sessionCookie.Value == "" {
-			auth.ServLogin(w, r)
+			//auth.ServLogin(w, r)
 			return
 		}
 
@@ -27,7 +27,7 @@ func AuthMidleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !exist {
-			auth.ServLogin(w, r)
+			//auth.ServLogin(w, r)
 			return
 		}
 

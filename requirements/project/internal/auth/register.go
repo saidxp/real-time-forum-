@@ -65,7 +65,7 @@ func SubmitRegister(w http.ResponseWriter, r *http.Request) {
 		ServRegister(w, r.WithContext(ctx))
 		return
 	}
-
+	
 	hash, err := utils.HashPassword(password)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)

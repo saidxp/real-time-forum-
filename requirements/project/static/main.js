@@ -1,6 +1,7 @@
 import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 import { fetchPosts } from "./setevrntlisnter.js";
-import {addevenlistnertohero} from "./addlistners"
+import {addevenlistnertohero} from "./addlistners.js"
+import { addevenlistnertoHeader } from "./addlistners.js"
 // Helper: create element with class and innerHTML
 function createEl(tag, className = '', html = '') {
   const el = document.createElement(tag);
@@ -55,11 +56,12 @@ async function buildHeader(user) {
 
   // Create Post Button !!
   const postDiv = createEl("div", "nes_post--header", `
-    <a href="/newPost" aria-label="Create new post" class="readmore">
+    <a href="/newPost" aria-label="Crea newpost" class="Stilo">
       <img src="/static/svg/pencil-line.svg" alt="New post icon">
       Create Post
     </a>
   `);
+  
   actionsDiv.appendChild(postDiv);
 
   // Auth/Profile section
@@ -89,6 +91,7 @@ async function buildHeader(user) {
     `;
     actionsDiv.appendChild(profileNav);
   } else {
+    // Her There Is The The Logout Out Stat I Need to lisntnign to it !!  
     const authLinks = createEl("div", "header__auth-links", `
       <a href="/register" class="header__auth-link">Sign Up</a>
       <a href="/login" class="header__auth-link">Login</a>
@@ -139,5 +142,7 @@ window.onload = async () => {
   // <====>
   // i need to set all event listner on Buthon 
   addevenlistnertohero()
+  addevenlistnertoHeader()
+  //addevenlistnertohero
   //
 };
