@@ -1,4 +1,6 @@
-export async function     loginbuilding(){
+import { homeBuild } from "./buildhome.js";
+
+export async function loginbuilding(user){
   // Clear existing content
   document.body.innerHTML = "";
   document.body.className = "";
@@ -85,9 +87,13 @@ export async function     loginbuilding(){
       if (res.ok && result.status === "ok") {
         localStorage.setItem("authToken", result.token);
         localStorage.setItem("username", result.username);
+        console.log(result.token)
+        console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
         errorMessage.style.display = "none";
         // her i will build home page again with result !!
-        window.location.href = "/";  
+        //window.location.href = "/";  
+        // I Call Function To Build Page Home To Not Let Page Refreche !!
+        await homeBuild(user)
       } else {
         errorMessage.style.display = "block";
         errorMessage.textContent = result.message || "Login failed";

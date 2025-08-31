@@ -128,6 +128,7 @@ export async function fetchPosts(filter = "") {
       } else {
         catWrap.innerHTML = `<span class="category">Uncategorized</span>`;
       }
+      
       categoriesDiv.appendChild(catWrap);
       bottomDiv.appendChild(categoriesDiv);
       bottomDiv.appendChild(el("span", "divider"));
@@ -148,9 +149,7 @@ export async function fetchPosts(filter = "") {
 
       postbot.appendChild(smallActions);
       postbot.appendChild(readMoreDiv);
-
       bottomDiv.appendChild(postbot);
-
       // assemble
       postDiv.appendChild(topDiv);
       postDiv.appendChild(bottomDiv);

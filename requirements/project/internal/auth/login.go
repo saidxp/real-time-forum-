@@ -16,7 +16,7 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         forumerror.MethodNotAllowed(w, r)
         return
     }
-
+    
     var payload struct {
         Username string `json:"username"`
         Password string `json:"password"`
