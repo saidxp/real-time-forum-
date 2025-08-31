@@ -1,6 +1,6 @@
 import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 import { fetchPosts } from "./setevrntlisnter.js";
-import {addevenlistnertohero} from "./addlistners"
+// import {addevenlistnertohero} from "./addlistners"
 // Helper: create element with class and innerHTML
 function createEl(tag, className = '', html = '') {
   const el = document.createElement(tag);
@@ -10,17 +10,28 @@ function createEl(tag, className = '', html = '') {
 }
 
 // Build the header dynamically
-async function buildHeader(user) {
+
+ async function buildHeader(user) {
   const body = document.body;
   const header = createEl("header", "header");
 
   // Logo
   const logoDiv = createEl("div", "header__logo", `
     <a href="/" class="header__logo-link">
-      <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img">
+      <img src=svg/logo.svg" alt="Logo" alt="Logo" class="header__logo-img">
     </a>
   `);
+
+  // Append elements first
   header.appendChild(logoDiv);
+  body.appendChild(header);
+
+  // Now safely select the image
+  const logoImg = header.querySelector(".header__logo-img");
+
+  // Add event listener
+  
+
 
   // User actions container
   const actionsDiv = createEl("div", "user_actions--header");
@@ -94,7 +105,21 @@ async function buildHeader(user) {
       <a href="/login" class="header__auth-link">Login</a>
     `);
     actionsDiv.appendChild(authLinks);
+    const buttons = authLinks.querySelectorAll(".header__auth-link");
+
+buttons.forEach(button => {
+  button.addEventListener("click", function (event) {
+    event.preventDefault();
+    body.appendChild(registration())
+    console.log("hhh", button.textContent);
+
+  });
+});
+
+  // 
+  
   }
+  
   // 
   header.appendChild(actionsDiv);
   body.insertBefore(header, body.firstChild);
