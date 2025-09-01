@@ -1,7 +1,7 @@
 import { Addeventlistnerandpost } from "./setevrntlisnter.js";
  
-import {addevenlistnertohero} from "./addlistners.js"
-import { addevenlistnertoHeader } from "./addlistners.js"
+import {setupGlobalListeners} from "./addlistners.js"
+
 import { homeBuild } from "./buildhome.js";
  
 // Main: on page load
@@ -25,8 +25,7 @@ window.onload = async () => {
    // Todo://all categorie still need fix !!
   // <====>
   // i need to set all event listner on Buthon 
-  addevenlistnertohero(user)
-  addevenlistnertoHeader(user)
+  setupGlobalListeners(user)
   //addevenlistnertohero
   //
 };

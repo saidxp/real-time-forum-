@@ -16,7 +16,7 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         forumerror.MethodNotAllowed(w, r)
         return
     }
-    
+
     var payload struct {
         Username string `json:"username"`
         Password string `json:"password"`
@@ -55,7 +55,6 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         forumerror.InternalServerError(w, r, err)
         return
     }
-
     if !utils.CheckPassword(password, hash) {
         w.WriteHeader(http.StatusUnauthorized)
         json.NewEncoder(w).Encode(map[string]any{
@@ -64,7 +63,6 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         })
         return
     }
-
     session := GenerateToken(32)
     http.SetCookie(w, &http.Cookie{
         Name:     "session_token",
@@ -73,7 +71,7 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         HttpOnly: true,
         SameSite: http.SameSiteStrictMode,
     })
-
+    
     err = db.UpdateUserSession(userId, session)
     if err != nil {
         forumerror.InternalServerError(w, r, err)
@@ -87,4 +85,5 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         "userId":   userId,
         "token":    session,
     })
+
 }

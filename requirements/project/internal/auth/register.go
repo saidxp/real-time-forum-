@@ -1,89 +1,76 @@
 package auth
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
 	db "forum/internal/db"
-	forumerror "forum/internal/error"
-	repo "forum/internal/repository"
 	utils "forum/internal/utils"
 	"net/http"
+	"strings"
 )
 
-func SwitchRegister(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		if r.URL.RawQuery != ""{
-			http.Redirect(w,r,"/register",http.StatusSeeOther)
-			return
-		} 
-		ServRegister(w, r)
-	case http.MethodPost:
-		SubmitRegister(w, r)
-	default:
-		forumerror.MethodNotAllowed(w, r)
-	}
-}
-
-func ServRegister(w http.ResponseWriter, r *http.Request) {
-	var errMap map[string]any
-	if r.Context().Value(repo.USER_ID_KEY) != nil && r.Context().Value(repo.USER_ID_KEY).(int) != -1 {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if r.Context().Value(repo.ERROR_CASE) != nil {
-		errMap = r.Context().Value(repo.ERROR_CASE).(map[string]any)
-	}
-	repo.GLOBAL_TEMPLATE.ExecuteTemplate(w, "register.html", errMap)
-}
-
 func SubmitRegister(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-	confirm_password := r.FormValue("confirm_password")
+	// Parse JSON body
+	fmt.Println("HHHHHHHHowa")
+	var input struct {
+		Username        string `json:"username"`
+		Email           string `json:"email"`
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirmPassword"`
+	}
 
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		// fallback: form submission
+		input.Username = r.FormValue("username")
+		input.Email = r.FormValue("email")
+		input.Password = r.FormValue("password")
+		input.ConfirmPassword = r.FormValue("confirm_password")
+	}
+
+	username := input.Username
+	email := input.Email
+	password := input.Password
+	confirm_password := input.ConfirmPassword
+
+	// === validation ===
 	if !utils.ValidUsername(username) {
-		ctx := context.WithValue(r.Context(), repo.ERROR_CASE, map[string]any{"Error": true, "Message": "Invalid username"})
-		ServRegister(w, r.WithContext(ctx))
+		http.Error(w, `{"status":"error","message":"Invalid username"}`, http.StatusBadRequest)
 		return
 	}
-
 	if !utils.ValidEmail(email) {
-		ctx := context.WithValue(r.Context(), repo.ERROR_CASE, map[string]any{"Error": true, "Message": "Invalid email"})
-		ServRegister(w, r.WithContext(ctx))
+		http.Error(w, `{"status":"error","message":"Invalid email"}`, http.StatusBadRequest)
 		return
 	}
-
 	if !utils.ValidPassword(password) {
-		ctx := context.WithValue(r.Context(), repo.ERROR_CASE, map[string]any{"Error": true, "Message": "Invalid password"})
-		ServRegister(w, r.WithContext(ctx))
+		http.Error(w, `{"status":"error","message":"Invalid password"}`, http.StatusBadRequest)
+		return
+	}
+	if confirm_password != password {
+		http.Error(w, `{"status":"error","message":"Passwords do not match"}`, http.StatusBadRequest)
 		return
 	}
 
-	if confirm_password != password {
-		ctx := context.WithValue(r.Context(), repo.ERROR_CASE, map[string]any{"Error": true, "Message": "You failed to confirm your password"})
-		ServRegister(w, r.WithContext(ctx))
-		return
-	}
-	
 	hash, err := utils.HashPassword(password)
 	if err != nil {
-		forumerror.InternalServerError(w, r, err)
+		http.Error(w, `{"status":"error","message":"Server error"}`, http.StatusInternalServerError)
 		return
 	}
 
 	err = db.AddNewUser(username, email, hash)
 	if err != nil {
-		if err.Error() == "UNIQUE constraint failed: users.username" || err.Error() == "UNIQUE constraint failed: users.email" {
-			ctx := context.WithValue(r.Context(), repo.ERROR_CASE, map[string]any{"Error": true, "Message": "username or email alredy used"})
-			ServRegister(w, r.WithContext(ctx))
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			http.Error(w, `{"status":"error","message":"username or email already used"}`, http.StatusConflict)
 			return
-		} else {
-			forumerror.InternalServerError(w, r, err)
 		}
+		http.Error(w, `{"status":"error","message":"Server error"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// sign in from registration
-	SubmitLogin(w, r)
+	//  <=====================>
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]any{
+		"status":  "ok",
+		"message": "Registration successful! Please login.",
+	})
 }

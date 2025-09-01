@@ -1,6 +1,22 @@
 import { fetchPosts } from "./setevrntlisnter.js";
+import{ Logoutfunc } from "./event.js"
+
 // build home it's separate from main !!
 export async function homeBuild(user) {
+  
+    // ADD ONLY THIS PART - Restore main-content structure if it was cleared
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent && !mainContent.querySelector('.hero')) {
+        mainContent.innerHTML = `
+            <section class="hero">
+            </section>
+            <section class="main-content__posts">
+                <p>post will be her </p>
+            </section>
+        `;
+    }
+    // END OF ADDITION
+  
     function createEl(tag, className = '', html = '') {
         const el = document.createElement(tag);
         if (className) el.className = className;
@@ -8,14 +24,16 @@ export async function homeBuild(user) {
         return el;
     }
 
-    // Build the header dynamically
+    // Remove existing header to avoid duplicates
+    const existingHeader = document.querySelector('header.header');
+    if (existingHeader) existingHeader.remove();
 
+    // Build the header dynamically
     const body = document.body;
     const header = createEl("header", "header");
-
     // Logo
     const logoDiv = createEl("div", "header__logo", `
-    <a href="/" class="header__logo-link">
+    <a href="/" id = "Logo" class="header__logo-link">
       <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img">
     </a>
   `);
@@ -54,7 +72,7 @@ export async function homeBuild(user) {
 
     // Create Post Button !!
     const postDiv = createEl("div", "nes_post--header", `
-    <a href="/newPost" aria-label="Crea newpost" class="Stilo">
+    <a href="/newPost" id = "Newpost" aria-label="Crea newpost" >
       <img src="/static/svg/pencil-line.svg" alt="New post icon">
       Create Post
     </a>
@@ -74,13 +92,13 @@ export async function homeBuild(user) {
           </div>
           <ul>
             <li>
-              <a href="/profile" class="header__profile-link">
+              <a id = "logo" class="header__profile-link">
                 <img src="/static/svg/bolt.svg" class="header__profile-icon">Account Settings
               </a>
             </li>
             <li>
-              <a href="/logout" class="header__profile-link">
-                <img src="/static/svg/log-out.svg" class="header__profile-icon">Logout
+              <a href="#" id ="OUT" class="header__profile-link">
+                <img src="/static/svg/log-out.svg" class="header__profile-icon" data-action="logout"> Logout
               </a>
             </li>
           </ul>
@@ -88,11 +106,40 @@ export async function homeBuild(user) {
       </ul>
     `;
         actionsDiv.appendChild(profileNav);
+        setTimeout(() => {
+          // Logout Listener
+          const logoutBtn = document.getElementById('OUT');
+          if (logoutBtn) {
+              logoutBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Logout clicked directly!');
+                  Logoutfunc();
+              });
+              console.log('Logout listener added successfully');
+          } else {
+              console.log('Logout button not found!');
+          }
+
+         // Seeting operation her !
+          const accountBtn = document.getElementById('logo');
+          if (accountBtn) {
+              accountBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Account settings clicked!');
+                  //handleAccountSettings();
+              });
+              console.log('Account settings listener added successfully');
+          } else {
+              console.log('Account settings button not found!');
+          }
+      },110);
     } else {
         // Her There Is The The Logout Out Stat I Need to lisntnign to it !!  
         const authLinks = createEl("div", "header__auth-links", `
-      <a href="/register" class="header__auth-link">Sign Up</a>
-      <a href="/login" class="header__auth-link">Login</a>
+      <a href="#" id = "Register" class="header__auth-link">Sign Up</a>
+      <a href="#" id = "Login" class="header__auth-link">Login</a>
     `);
         actionsDiv.appendChild(authLinks);
     }
@@ -111,10 +158,10 @@ function buildHero(user) {
     <h1 class="hero__title">Welcome to the Forum</h1>
     <div class="hero__cta">
       ${user.authenticated
-      ? `<a href="/newPost" class="btn-secondary">Create Post</a>
-           <a href="/profile" class="btn-secondary">Profile</a>`
-      : `<a href="/login" class="btn-secondary">Login</a>
-           <a href="/register" class="btn-secondary">Sign Up</a>`}
+      ? `<a href="/newPost" id ="Newpost"  class="btn-secondary">Create Post</a>
+           <a href="/profile" id = "Profile"  class="btn-secondary">Profile</a>`
+      : `<a href="#" id = "Login"  class="btn-secondary">Login</a>
+           <a href="#" id = "Register"  class="btn-secondary">Sign Up</a>`}
     </div>
   `;
 }

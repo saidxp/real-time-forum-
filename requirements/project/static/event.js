@@ -1,9 +1,24 @@
 import { homeBuild } from "./buildhome.js";
 
-export async function loginbuilding(user){
-  // Clear existing content
-  document.body.innerHTML = "";
-  document.body.className = "";
+export async function loginbuilding(user) {
+  if (!document.querySelector('link[href*="forms.css"]')) {
+    const formsCSS = document.createElement('link');
+    formsCSS.rel = 'stylesheet';
+    formsCSS.href = '/static/css/forms.css';
+    document.head.appendChild(formsCSS);
+  }
+
+  // Clear existing content but keep the original structure
+  const mainContent = document.querySelector('.main-content');
+  const mobileHeader = document.querySelector('.mobileHeader');
+  const pagination = document.querySelector('.pagination');
+  const footerContainer = document.querySelector('.footer');
+
+  // Clear the containers
+  if (mainContent) mainContent.innerHTML = "";
+  if (mobileHeader) mobileHeader.innerHTML = "";
+  if (pagination) pagination.innerHTML = "";
+  if (footerContainer) footerContainer.innerHTML = "";
 
   // Helper to create elements
   function createEl(tag, className = "", html = "") {
@@ -51,7 +66,7 @@ export async function loginbuilding(user){
 
     <div id="errorMessage" class="error-container" style="display:none;"></div>
     <input type="submit" value="Login" />
-    <p>Don't have an account? <a href="/register">Register here</a></p>
+    <p>Don't have an account? <a href="#" id = "Register" >Register here</a></p>
   `;
   container.appendChild(form);
 
@@ -63,10 +78,9 @@ export async function loginbuilding(user){
     </div>
   `;
 
-  // Append all
-  document.body.appendChild(header);
-  document.body.appendChild(container);
-  document.body.appendChild(footer);
+  if (mobileHeader) mobileHeader.appendChild(header);
+  if (mainContent) mainContent.appendChild(container);
+  if (footerContainer) footerContainer.appendChild(footer);
 
   // === Handle form submit ===
   const errorMessage = document.getElementById("errorMessage");
@@ -93,6 +107,8 @@ export async function loginbuilding(user){
         // her i will build home page again with result !!
         //window.location.href = "/";  
         // I Call Function To Build Page Home To Not Let Page Refreche !!
+        const res = await fetch("/api/me");
+        const user = await res.json();
         await homeBuild(user)
       } else {
         errorMessage.style.display = "block";
@@ -104,4 +120,32 @@ export async function loginbuilding(user){
       console.error(err);
     }
   });
+}
+
+
+
+export async function Logoutfunc() {
+  //
+  try {
+      const response = await fetch("/logout", {
+      method: "POST", 
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data = await response.json();
+    if (response.ok) {
+      console.log(data.message);
+      const res = await fetch("/api/me");
+      const user = await res.json();
+      await homeBuild(user)
+    } else {
+      console.error("Logout error:", data.error);
+      alert("Logout failed: " + data.error);
+    }
+  } catch (err) {
+      console.error("Logout failed:", err);
+      alert("Something went wrong while logging out.");
+  }
 }

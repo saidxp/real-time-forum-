@@ -34,10 +34,12 @@ func forumMux() *http.ServeMux {
 	
 	// authontication mux
 	forumux.HandleFunc("/login", middleware.InjectUser(auth.SubmitLogin))
-	
-	// her i will check login ||||| ///
-	forumux.HandleFunc("/register", middleware.InjectUser(auth.SwitchRegister))
+	// ===== log out function !!
 	forumux.HandleFunc("/logout", auth.LogoutHandler)
+	// <=====================>
+	// her i will check login ||||| ///
+	forumux.HandleFunc("/register", middleware.InjectUser(auth.SubmitRegister))
+	 
 
 	// profile mux
 	//forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
