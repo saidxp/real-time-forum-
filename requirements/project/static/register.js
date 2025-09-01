@@ -1,4 +1,5 @@
 import { loginbuilding } from "./event.js";
+import { Addeventlistnerandpost} from "./setevrntlisnter.js"
 
 export async function registerBuilding(user) {
 
@@ -85,7 +86,9 @@ export async function registerBuilding(user) {
   `;
 
   container.appendChild(form);
-
+  // Add Event Listner To Tthe Filter !!
+  Addeventlistnerandpost()
+  // <========||=========>
   // === Footer ===
   const footer = createEl("footer", "footer");
   footer.innerHTML = `

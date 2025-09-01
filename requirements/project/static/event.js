@@ -1,5 +1,5 @@
 import { homeBuild } from "./buildhome.js";
-
+import { Addeventlistnerandpost } from "./setevrntlisnter.js"
 export async function loginbuilding(user) {
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
@@ -69,6 +69,7 @@ export async function loginbuilding(user) {
     <p>Don't have an account? <a href="#" id = "Register" >Register here</a></p>
   `;
   container.appendChild(form);
+  Addeventlistnerandpost()
 
   // === Footer ===
   const footer = createEl("footer");
