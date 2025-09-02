@@ -1,4 +1,9 @@
 import { Addeventlistnerandpost } from "./setevrntlisnter.js";
+ 
+import {setupGlobalListeners} from "./addlistners.js"
+
+import { homeBuild } from "./buildhome.js";
+ 
 import { fetchPosts } from "./setevrntlisnter.js";
 // import {addevenlistnertohero} from "./addlistners"
 // Helper: create element with class and innerHTML
@@ -149,13 +154,12 @@ window.onload = async () => {
   //console.log(user)
   console.log(user)
   // her i build header 
-  await buildHeader(user);
+  await homeBuild(user);
   // her i build hero section !!
-  buildHero(user);
+
   // her i add event-listner and post by click !!
   // Fetch Posts Her In First Load !! 
-  fetchPosts("")
-  // <=====> \\ 
+   // <=====> \\ 
   // than i add event listner her for filters !!
   // and i fetch the post by click of users !!
   Addeventlistnerandpost();
@@ -163,6 +167,7 @@ window.onload = async () => {
    // Todo://all categorie still need fix !!
   // <====>
   // i need to set all event listner on Buthon 
-  addevenlistnertohero()
+  setupGlobalListeners(user)
+  //addevenlistnertohero
   //
 };

@@ -1,19 +1,21 @@
 // static/
-// seteverntlistner her 
-
+// seteverntlistner her <!{'.'}!>
+import { homeBuild } from "./buildhome.js";
 // --------------------
 // Function to attach filter click listeners
 // --------------------
 export function Addeventlistnerandpost() {
   // Or simply:
   const filterLinks = document.querySelectorAll("a[data-filter]");
-
   filterLinks.forEach(link => {
-    link.addEventListener("click", event => {
+    link.addEventListener("click", async event => {
       event.preventDefault(); // not let refrech page !!
-        
       const filter = decodeURIComponent(link.dataset.filter); 
       console.log(filter)
+      console.log("---------- howa it's her ")
+      const res = await fetch("/api/me");
+      const user = await res.json();
+      await homeBuild(user)
       fetchPosts(filter);
     });
   });
@@ -128,6 +130,7 @@ export async function fetchPosts(filter = "") {
       } else {
         catWrap.innerHTML = `<span class="category">Uncategorized</span>`;
       }
+      
       categoriesDiv.appendChild(catWrap);
       bottomDiv.appendChild(categoriesDiv);
       bottomDiv.appendChild(el("span", "divider"));
@@ -148,9 +151,7 @@ export async function fetchPosts(filter = "") {
 
       postbot.appendChild(smallActions);
       postbot.appendChild(readMoreDiv);
-
       bottomDiv.appendChild(postbot);
-
       // assemble
       postDiv.appendChild(topDiv);
       postDiv.appendChild(bottomDiv);

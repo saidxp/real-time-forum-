@@ -1,0 +1,167 @@
+import { fetchPosts } from "./setevrntlisnter.js";
+import{ Logoutfunc } from "./event.js"
+
+// build home it's separate from main !!
+export async function homeBuild(user) {
+  
+    // ADD ONLY THIS PART - Restore main-content structure if it was cleared
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent && !mainContent.querySelector('.hero')) {
+        mainContent.innerHTML = `
+            <section class="hero">
+            </section>
+            <section class="main-content__posts">
+                <p>post will be her </p>
+            </section>
+        `;
+    }
+    // END OF ADDITION
+  
+    function createEl(tag, className = '', html = '') {
+        const el = document.createElement(tag);
+        if (className) el.className = className;
+        if (html) el.innerHTML = html;
+        return el;
+    }
+
+    // Remove existing header to avoid duplicates
+    const existingHeader = document.querySelector('header.header');
+    if (existingHeader) existingHeader.remove();
+
+    // Build the header dynamically
+    const body = document.body;
+    const header = createEl("header", "header");
+    // Logo
+    const logoDiv = createEl("div", "header__logo", `
+    <a href="/" id = "Logo" class="header__logo-link">
+      <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img">
+    </a>
+  `);
+    header.appendChild(logoDiv);
+
+    // User actions container
+    const actionsDiv = createEl("div", "user_actions--header");
+
+    // Filter nav
+    const nav = createEl("nav", "profile-nav");
+    const ul = createEl("ul");
+    const liDropdown = createEl("li", "profile-dropdown");
+    const filterDiv = createEl("div", "header__filter-label");
+    filterDiv.innerHTML = `Filter <img src="/static/svg/filter.svg" alt="Filter by Categories">`;
+    liDropdown.appendChild(filterDiv);
+
+    const filterUl = createEl("ul");
+    if (user.fileds) {
+        Object.keys(user.fileds).forEach(key => {
+            const li = createEl("li");
+            li.innerHTML = `<a href="#" data-filter="${encodeURIComponent(key)}">${key}</a>`;
+            filterUl.appendChild(li);
+        });
+    }
+    
+    if (user.authenticated) {
+        filterUl.innerHTML += `<li><a href="#" data-filter="Owned">Owned</a></li>`;
+        filterUl.innerHTML += `<li><a href="#" data-filter="Likes">Liked</a></li>`;
+    }
+
+    // <===================||====================>
+    liDropdown.appendChild(filterUl);
+    ul.appendChild(liDropdown);
+    nav.appendChild(ul);
+    actionsDiv.appendChild(nav);
+
+    // Create Post Button !!
+    const postDiv = createEl("div", "nes_post--header", `
+    <a href="/newPost" id = "Newpost" aria-label="Crea newpost" >
+      <img src="/static/svg/pencil-line.svg" alt="New post icon">
+      Create Post
+    </a>
+  `);
+
+    actionsDiv.appendChild(postDiv);
+
+    // Auth/Profile section
+    if (user.authenticated) {
+        const profileNav = createEl("nav", "profile-nav");
+        profileNav.innerHTML = `
+      <ul>
+        <li class="profile-dropdown">
+          <div class="header__profile">
+            <div class="initial">${user.Initial}</div>
+            <div class="username">${user.Username}</div>
+          </div>
+          <ul>
+            <li>
+              <a id = "logo" class="header__profile-link">
+                <img src="/static/svg/bolt.svg" class="header__profile-icon">Account Settings
+              </a>
+            </li>
+            <li>
+              <a href="#" id ="OUT" class="header__profile-link">
+                <img src="/static/svg/log-out.svg" class="header__profile-icon" data-action="logout"> Logout
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    `;
+        actionsDiv.appendChild(profileNav);
+        setTimeout(() => {
+          // Logout Listener
+          const logoutBtn = document.getElementById('OUT');
+          if (logoutBtn) {
+              logoutBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Logout clicked directly!');
+                  Logoutfunc();
+              });
+              console.log('Logout listener added successfully');
+          } else {
+              console.log('Logout button not found!');
+          }
+
+         // Seeting operation her !
+          const accountBtn = document.getElementById('logo');
+          if (accountBtn) {
+              accountBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Account settings clicked!');
+                  //handleAccountSettings();
+              });
+              console.log('Account settings listener added successfully');
+          } else {
+              console.log('Account settings button not found!');
+          }
+      },110);
+    } else {
+        // Her There Is The The Logout Out Stat I Need to lisntnign to it !!  
+        const authLinks = createEl("div", "header__auth-links", `
+      <a href="#" id = "Register" class="header__auth-link">Sign Up</a>
+      <a href="#" id = "Login" class="header__auth-link">Login</a>
+    `);
+        actionsDiv.appendChild(authLinks);
+    }
+    // 
+    header.appendChild(actionsDiv);
+    body.insertBefore(header, body.firstChild);
+    // build hero !!
+    buildHero(user)
+    // Get Post <==!!==>
+    fetchPosts("")
+}
+
+function buildHero(user) {
+  const hero = document.querySelector(".hero");
+  hero.innerHTML = `
+    <h1 class="hero__title">Welcome to the Forum</h1>
+    <div class="hero__cta">
+      ${user.authenticated
+      ? `<a href="/newPost" id ="Newpost"  class="btn-secondary">Create Post</a>
+           <a href="/profile" id = "Profile"  class="btn-secondary">Profile</a>`
+      : `<a href="#" id = "Login"  class="btn-secondary">Login</a>
+           <a href="#" id = "Register"  class="btn-secondary">Sign Up</a>`}
+    </div>
+  `;
+}
