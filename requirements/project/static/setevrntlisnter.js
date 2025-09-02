@@ -147,7 +147,10 @@ export async function fetchPosts(filter = "") {
       `;
 
       const readMoreDiv = el("div", "ReadMore");
-      readMoreDiv.innerHTML = `<a href="/post?Id=${Id}" class="readmore" id="btn2">Read More</a>`;
+      //readMoreDiv.innerHTML = `<a href="/post?Id=${Id}" class="readmore" id="btn2">Read More</a>`;
+      //readMoreDiv.innerHTML = `<a href="#" class="readmore" id="btn2">Read More</a>`;
+      readMoreDiv.innerHTML = `<a href="#" class="readmore" data-id="${Id}">Read More</a>`;
+
 
       postbot.appendChild(smallActions);
       postbot.appendChild(readMoreDiv);

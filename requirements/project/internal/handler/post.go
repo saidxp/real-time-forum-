@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"fmt"
 	db "forum/internal/db"
 	forumerror "forum/internal/error"
 	repo "forum/internal/repository"
@@ -11,10 +12,13 @@ import (
 )
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Howa Hada")
 	if r.Method != http.MethodGet {
 		forumerror.MethodNotAllowed(w, r)
 		return
 	}
+
+	fmt.Println("Howa Hada")
 
 	var confMap = make(map[string]any)
 	userID := r.Context().Value(repo.USER_ID_KEY).(int)

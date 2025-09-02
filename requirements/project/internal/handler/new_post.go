@@ -53,6 +53,7 @@ func PostPostHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	
 	// <=================================>
 	postID, err := db.AddNewPost(userID, title, content)
 	if err != nil {

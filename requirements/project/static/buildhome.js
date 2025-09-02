@@ -135,6 +135,9 @@ export async function homeBuild(user) {
               console.log('Account settings button not found!');
           }
       },110);
+      // <==========> her i will add event listner about (filter)
+            /// her >>>> 
+      //  <==================================================>
     } else {
         // Her There Is The The Logout Out Stat I Need to lisntnign to it !!  
         const authLinks = createEl("div", "header__auth-links", `

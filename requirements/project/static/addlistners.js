@@ -1,6 +1,7 @@
 import { loginbuilding, Logoutfunc } from "./event.js";
 import { registerBuilding } from "./register.js";
-import { NewPost} from "./newpost.js"
+import { NewPost } from "./newpost.js"
+import {POST} from "./post.js"
 
 // Set up a single global listener for hero + header links
 export function setupGlobalListeners(User) {
@@ -9,23 +10,41 @@ export function setupGlobalListeners(User) {
     console.log("<=(event)======")
     console.log(target)
     console.log("============")
+    const POSTID = event.target.closest("a.readmore");
+    // stop for not refrech !! <=> 
+    event.preventDefault();
 
+    console.log("======= Test Event of READ MORE")
+    console.log(POSTID)
+    console.log("===============================")
     // her i will fetch the state of user if he is  Authenicate or NO ...!! 
     // <=====================>
     const res = await fetch("/api/me");
     const user = await res.json();
     // <==================>
-    // i was using when i want to go trought nodes to handle nested element but i get problem ! 
+    // I Was Using When I Want To Go trought nodes to handle nested element but i get problem ! 
     console.log("<=(state)=====")
-    console.log(user.fileds)
+    console.log(user)
     console.log("===========")
 
-    while (target && target.tagName !== "A") {
-      target = target.parentElement;
+    console.log("======her about post isolation====")
+    if (POSTID.classList.contains("readmore")) {
+      console.log("Yes, clicked readmore!");
+      const postId = POSTID.dataset.id; // 
+      console.log("Post ID:", postId);
+      console.log(typeof(postId))
+      // her i will call the post isoaltion 
+      POST(postId, user) 
     }
+    console.log("=====================")
+        
+     
+    //while (target && tmodulearget.tagName !== "A") {
+      //target = target.parentElement;
+    //}
     // <==========> 
-    if (!target) return; 
-    event.preventDefault();
+    if (!target || !POSTID) return;
+    
 
     const id = target.id;
 
@@ -50,21 +69,25 @@ export function setupGlobalListeners(User) {
     // --- <Logo> ---
     else if (id === "Logo" || id === "logo") {
       console.log("Logo clicked!");
+
       // Optional: rebuild home page if needed
       // homeBuild(user);
     }
 
-    // I Will Work With This <!.!>
-    // --- <Create Post> ---
+    // I Will Work With ThiS |<!{.}!> |
+    // <--- <Create Post> --->
     else if (id === "Newpost") {
       console.log("Create Post clicked!");
       // call your create post function
       // I Will CHECK If It's Autenticate Or No !!
       // IF TRUE AUT ELSE GO TO LOGIN !!
-      console.log(typeof(user.fileds))
-      NewPost(Object.keys(user.fileds))
+      if (user.authenticated) {
+        NewPost(Object.keys(user.fileds))
+      } else {
+        // if ther user is not authenticated it's must be login first !
+        loginbuilding()
+      }
     }
-
     // --- <Profile> ---
     else if (id === "Profile") {
       console.log("Profile clicked!");

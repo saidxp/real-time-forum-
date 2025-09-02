@@ -1,6 +1,6 @@
 import { homeBuild } from "./buildhome.js";
 import { Addeventlistnerandpost } from "./setevrntlisnter.js"
-export async function loginbuilding(user) {
+export async function loginbuilding() {
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
     formsCSS.rel = 'stylesheet';

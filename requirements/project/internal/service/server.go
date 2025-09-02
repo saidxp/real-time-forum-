@@ -39,7 +39,9 @@ func forumMux() *http.ServeMux {
 	// <=====================>
 	// her i will check login ||||| ///
 	forumux.HandleFunc("/register", middleware.InjectUser(auth.SubmitRegister))
-	 
+	forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
+	forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
+	
 
 	// profile mux
 	//forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
@@ -48,8 +50,8 @@ func forumMux() *http.ServeMux {
 	//forumux.HandleFunc("/profile/delete", middleware.AuthMidleware(handler.ServeDelete))
 	//forumux.HandleFunc("POST /profile/delete/confirm", middleware.AuthMidleware(handler.DeleteConfirmation))
 
-	// New Post Mux <<<====|||====>>>
-	forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
+	// New Post ux <<<====|||====>>>
+	//forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
 
 	// like dislike
 	//forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
@@ -57,7 +59,7 @@ func forumMux() *http.ServeMux {
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
 	// post
-	forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
+	//forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 
 	// comment like dislike
 	forumux.HandleFunc("/commentLike", middleware.AuthMidleware(handler.CommentLikeHandler))
