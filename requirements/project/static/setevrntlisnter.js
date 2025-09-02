@@ -9,7 +9,7 @@ export function Addeventlistnerandpost() {
   const filterLinks = document.querySelectorAll("a[data-filter]");
   filterLinks.forEach(link => {
     link.addEventListener("click", async event => {
-      event.preventDefault(); // not let refrech page !!
+      event.preventDefault(); // not let refrech page ....... !!
       const filter = decodeURIComponent(link.dataset.filter); 
       console.log(filter)
       console.log("---------- howa it's her ")

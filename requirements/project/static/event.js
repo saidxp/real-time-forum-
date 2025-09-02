@@ -8,7 +8,7 @@ export async function loginbuilding(user) {
     document.head.appendChild(formsCSS);
   }
 
-  // Clear existing content but keep the original structure
+  // Clear Existing STRUCT but keep them as original !!
   const mainContent = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
   const pagination = document.querySelector('.pagination');
@@ -122,8 +122,6 @@ export async function loginbuilding(user) {
     }
   });
 }
-
-
 
 export async function Logoutfunc() {
   //

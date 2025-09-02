@@ -1,100 +1,77 @@
 package handler
 
 import (
-	db "forum/internal/db"
+	//"database/sql"
+	"encoding/json"
+	"fmt"
+	"forum/internal/db"
 	forumerror "forum/internal/error"
-	repo "forum/internal/repository"
+	"forum/internal/repository"
 	"forum/internal/utils"
 	"html"
 	"net/http"
 	"strings"
 )
 
-func NewPostHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		GetPostHandler(w, r)
-	} else if r.Method == http.MethodPost {
-		PostPostHandler(w, r)
-	} else {
-		forumerror.MethodNotAllowed(w, r)
-		return
-	}
-}
-
-func GetPostHandler(w http.ResponseWriter, r *http.Request) {
-	var confMap = make(map[string]any)
-	if r.Context().Value(repo.ERROR_CASE) != nil {
-		confMap = r.Context().Value(repo.ERROR_CASE).(map[string]any)
-	}
-
-	var tmp = make(map[string]any)
-	for k, v := range repo.IT_MAJOR_FIELDS {
-		if k != "All categories" {
-			tmp[k] = v
-		}
-	}
-	confMap["Fields"] = tmp
-	userId := r.Context().Value(repo.USER_ID_KEY).(int)
-	user, err := db.GetUserInfo(userId)
-	if err != nil {
-		forumerror.InternalServerError(w, r, err)
-		return
-	}
-	confMap["Username"] = user.Username
-	repo.GLOBAL_TEMPLATE.ExecuteTemplate(w, "new_post.html", confMap)
-}
 
 func PostPostHandler(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(repo.USER_ID_KEY).(int)
 
-	IsUserCanPostToday, err := db.IsUserCanPostToday(userId)
-	if !IsUserCanPostToday {
-		forumerror.TooManyRequests(w, r, "posts")
-		return
-	}
+	fmt.Println("hhhhhhhhh")
+	// get user id from context !!
+	userID := r.Context().Value(repository.USER_ID_KEY).(int)
+
+	canPost, err := db.IsUserCanPostToday(userID)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-
-	escapedTitle := html.EscapeString(r.FormValue("title"))
-	escapedContent := html.EscapeString(r.FormValue("content"))
-
-	trimedTitle := strings.TrimSpace(escapedTitle)
-	trimedContent := strings.TrimSpace(escapedContent)
-	if trimedTitle == "" || trimedContent == "" {
-		http.Redirect(w, r, "/newPost", http.StatusSeeOther)
+	if !canPost {
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]string{"error": "You can only post once per day"})
 		return
 	}
 
-	if !utils.ValidPost(escapedContent) || !utils.ValidPostTitle(escapedTitle) {
-		forumerror.BadRequest(w, r)
+	title := strings.TrimSpace(html.EscapeString(r.FormValue("title")))
+	content := strings.TrimSpace(html.EscapeString(r.FormValue("content")))
+	if title == "" || content == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Title and content are required"})
 		return
 	}
+
+	if !utils.ValidPost(content) || !utils.ValidPostTitle(title) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid title or content"})
+		return
+	}
+
 	categories := r.Form["Categories"]
 	for _, c := range categories {
-		if !repo.IT_MAJOR_FIELDS[c] {
-			forumerror.BadRequest(w, r)
+		if !repository.IT_MAJOR_FIELDS[c] {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid category"})
 			return
 		}
 	}
-	postId, err := db.AddNewPost(userId, escapedTitle, escapedContent)
+	// <=================================>
+	postID, err := db.AddNewPost(userID, title, content)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
 
-	err = r.ParseForm()
-	if err != nil {
+	if err := db.MapPostWithCategories(postID, categories); err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
 
-	err = db.MapPostWithCategories(postId, categories)
-	if err != nil {
-		forumerror.InternalServerError(w, r, err)
-		return
-	}
-
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// return json with post info instead of redirect them !!
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":    true,
+		"postID":     postID,
+		"title":      title,
+		"content":    content,
+		"categories": categories,
+	})
 }

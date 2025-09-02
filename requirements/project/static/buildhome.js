@@ -72,7 +72,7 @@ export async function homeBuild(user) {
 
     // Create Post Button !!
     const postDiv = createEl("div", "nes_post--header", `
-    <a href="/newPost" id = "Newpost" aria-label="Crea newpost" >
+    <a href="#" id = "Newpost" aria-label="Crea newpost" >
       <img src="/static/svg/pencil-line.svg" alt="New post icon">
       Create Post
     </a>
