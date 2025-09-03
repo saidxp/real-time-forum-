@@ -46,19 +46,36 @@ type PageData struct {
 	Posts []Post
 }
 
+// < == > < !.! >
+
 type Comment struct {
-	Username string
-	Initial  string
-	Content     template.HTML
-	
-	//TODO; ADD TIME OF CREATION
-	DateCreated string // Placeholder, should be set to actual creation date
-	PostId                      int
-	CommentId                   int
-	IsCommentLikedByUser        bool
-	IsCommentDislikedByUser     bool
-	CommentLikes                int
-	CommentDislikes int
+    Username string        `json:"username"`
+    Initial  string        `json:"initial"`
+    Content  template.HTML `json:"content"` // keep template.HTML
+    
+    DateCreated string `json:"dateCreated"`
+    PostId      int    `json:"postId"`
+    CommentId   int    `json:"commentId"`
+    
+    IsCommentLikedByUser    bool `json:"isCommentLikedByUser"`
+    IsCommentDislikedByUser bool `json:"isCommentDislikedByUser"`
+    CommentLikes            int  `json:"commentLikes"`
+    CommentDislikes         int  `json:"commentDislikes"`
+}
+
+// <======> fit with json data who i will send to front   
+type PostResponse struct {
+	Success       bool       `json:"success"`
+	Post          Post       `json:"post"`
+	Comments      []Comment  `json:"comments"`
+	CurrentPage   int        `json:"currentPage"`
+	HasPrev       bool       `json:"hasPrev"`
+	PrevPage      string     `json:"prevPage,omitempty"`
+	HasNext       bool       `json:"hasNext"`
+	NextPage      string     `json:"nextPage,omitempty"`
+	Authenticated bool       `json:"authenticated"`
+	Username      string     `json:"username,omitempty"`
+	Initial       string     `json:"initial,omitempty"`
 }
 
 type contextKey string
