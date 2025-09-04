@@ -166,6 +166,10 @@ const (
   INSERT INTO comment_likes_dislikes
       (user_id, comment_id, is_like, is_dislike, created_at)
   VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP);`
+  INSERT_IN_TO_CHAT_MSG=`
+  INSERT INTO chat_msg
+      (user_id, masage, created_at)
+  VALUES ( ?, ?, CURRENT_TIMESTAMP);`
 
 
 
@@ -193,5 +197,6 @@ const (
   WHERE c.name = ?;
   `
   UPDATE_CAT_COUNT = `UPDATE categories_count SET post_count = ? WHERE category_id = ?; `
+  
 
 )
