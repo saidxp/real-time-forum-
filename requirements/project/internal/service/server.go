@@ -26,12 +26,12 @@ func forumMux() *http.ServeMux {
 
 	// root mux ====> i will check it roooooooooooot !!! >>
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
-	/// 
+	///
 	forumux.HandleFunc("/api/me", middleware.InjectUser(handler.FirststateHandler))
 	// <=========================|-|=============================>
 	// Her i will get filter post or post !!
 	forumux.HandleFunc("/api/posts", middleware.InjectUser(handler.PostsHandlerApi))
-	
+
 	// authontication mux
 	forumux.HandleFunc("/login", middleware.InjectUser(auth.SubmitLogin))
 	// ===== log out function !!
@@ -39,7 +39,6 @@ func forumMux() *http.ServeMux {
 	// <=====================>
 	// her i will check login ||||| ///
 	forumux.HandleFunc("/register", middleware.InjectUser(auth.SubmitRegister))
-	 
 
 	// profile mux
 	//forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
@@ -74,6 +73,8 @@ func StartServer() {
 		Addr:    repo.PORT,
 		Handler: middleware.RateLimiterMiddleware(forumMux(), 15, 30),
 	}
+	r := handler.NewRoom()
+	go r.Run()
 
 	fmt.Println(repo.SERVER_RUN_MESSAGE)
 	go func() {
