@@ -66,7 +66,7 @@ const (
 var upgrader = &websocket.Upgrader{
 	ReadBufferSize:  socketBuffersize,
 	WriteBufferSize: messageBuffersize,
-	CheckOrigin:     func(r *http.Request) bool { return true }, // allow cross-origin if needed
+	CheckOrigin:     func(r *http.Request) bool { return true }, 
 }
 
 func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {

@@ -16,7 +16,6 @@ func (c *user) read() {
 		if err != nil {
 			return
 		}
-		// broadcast raw json
 		c.room.forward <- msg
 	}
 }

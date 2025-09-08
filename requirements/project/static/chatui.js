@@ -1,5 +1,4 @@
 export function loadChatUI() {
-  // remove old content
   const heder = document.querySelector(".main-content");
   const pagination = document.querySelector(".pagination");
   const footer = document.querySelector(".footer");
@@ -8,11 +7,9 @@ export function loadChatUI() {
   if (pagination) pagination.remove();
   if (footer) footer.remove();
 
-  // main wrapper
   const chatContainer = document.createElement("div");
   chatContainer.className = "chat-container";
 
-  // middle chat area
   const chatMain = document.createElement("div");
   chatMain.className = "chat-main";
   chatMain.innerHTML = `
@@ -26,7 +23,6 @@ export function loadChatUI() {
     </div>
   `;
 
-  // right sidebar (connected users)
   const chatSidebar = document.createElement("div");
   chatSidebar.className = "chat-sidebar";
   chatSidebar.innerHTML = `
@@ -39,17 +35,13 @@ export function loadChatUI() {
     </ul>
   `;
 
-  // append in order: chat + sidebar
   chatContainer.append(chatMain, chatSidebar);
 
-  // add to body
   document.body.append(chatContainer);
 
-  // --------------------------
-  // WebSocket logic
-  // --------------------------
+  
 const params = new URLSearchParams(window.location.search);
-const room = params.get("room") || "general"; // default room if none provided
+const room = params.get("room") || "general"; 
 
 
   const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
@@ -85,7 +77,7 @@ const room = params.get("room") || "general"; // default room if none provided
     const input = document.getElementById("msg");
     if (input.value.trim() !== "") {
       const payload = {
-        name: "Me", // TODO: replace with logged-in username from session
+        name: "Me",
         message: input.value,
       };
       socket.send(JSON.stringify(payload));
