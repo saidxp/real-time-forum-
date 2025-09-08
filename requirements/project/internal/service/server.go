@@ -67,6 +67,8 @@ func forumMux() *http.ServeMux {
 
 	// static mux
 	forumux.HandleFunc("/static/", handler.StaticHandler)
+	hub := handler.NewHub()
+	forumux.HandleFunc("/room", hub.ServeWs)
 
 	return forumux
 }

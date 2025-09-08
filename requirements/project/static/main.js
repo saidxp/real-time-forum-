@@ -3,7 +3,8 @@ import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 import {setupGlobalListeners} from "./addlistners.js"
 
 import { homeBuild } from "./buildhome.js";
- 
+import {loadChatUI}from "./chatui.js"
+loadChatUI()
 // Main: on page load
 window.onload = async () => {
   const res = await fetch("/api/me");
