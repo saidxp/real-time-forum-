@@ -155,7 +155,7 @@ export async function fetchPosts(filter = "") {
       postbot.appendChild(smallActions);
       postbot.appendChild(readMoreDiv);
       bottomDiv.appendChild(postbot);
-      // assemble
+      
       postDiv.appendChild(topDiv);
       postDiv.appendChild(bottomDiv);
       containerDiv.appendChild(postDiv);

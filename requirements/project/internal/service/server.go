@@ -33,7 +33,7 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/api/posts", middleware.InjectUser(handler.PostsHandlerApi))
 	
 	// authontication mux
-	forumux.HandleFunc("/login", middleware.InjectUser(auth.SubmitLogin))
+	forumux.HandleFunc("/login", auth.SubmitLogin)
 	// ===== log out function !!
 	forumux.HandleFunc("/logout", auth.LogoutHandler)
 	// <=====================>

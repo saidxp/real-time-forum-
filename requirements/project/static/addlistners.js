@@ -2,7 +2,8 @@ import { loginbuilding, Logoutfunc } from "./event.js";
 import { registerBuilding } from "./register.js";
 import { NewPost } from "./newpost.js"
 import {POST} from "./post.js"
-
+import { homeBuild } from "./buildhome.js";
+import { fetchPosts } from "./setevrntlisnter.js";
 // Set up a single global listener for hero + header links
 export function setupGlobalListeners(User) {
   document.addEventListener("click", async (event) => {
@@ -10,9 +11,22 @@ export function setupGlobalListeners(User) {
     console.log("<=(event)======")
     console.log(target)
     console.log("============")
+    const filterLink = target.closest("a[data-filter]");
+    if (filterLink) {
+      event.preventDefault();
+      const filter = decodeURIComponent(filterLink.dataset.filter);
+      console.log("Filter clicked:", filter);
+
+      const res = await fetch("/api/me");
+      const user = await res.json();
+      await homeBuild(user);      
+      fetchPosts(filter);          
+      return;                       
+    }
+
     const POSTID = event.target.closest("a.readmore");
     // stop for not refrech !! <=> 
-    event.preventDefault();
+    //event.preventDefault();
 
     console.log("======= Test Event of READ MORE")
     console.log(POSTID)
@@ -28,7 +42,7 @@ export function setupGlobalListeners(User) {
     console.log("===========")
 
     console.log("======her about post isolation====")
-    if (POSTID.classList.contains("readmore")) {
+    if (POSTID) {
       console.log("Yes, clicked readmore!");
       const postId = POSTID.dataset.id; // 
       console.log("Post ID:", postId);
@@ -37,17 +51,13 @@ export function setupGlobalListeners(User) {
       POST(postId, user) 
     }
     console.log("=====================")
-        
-     
     //while (target && tmodulearget.tagName !== "A") {
       //target = target.parentElement;
     //}
     // <==========> 
-    if (!target || !POSTID) return;
-    
-
+    if (!target) return;
     const id = target.id;
-
+    console.log("the id her", id)
     // SWITCH CASE WILL BE GOOD LATER !
     // --- <Login> ---
     if (id === "Login") {
@@ -56,6 +66,7 @@ export function setupGlobalListeners(User) {
     }
     // --- <Register> ---
     else if (id === "Register") {
+      event.preventDefault();
       registerBuilding();
       console.log("Register clicked!");
     }
@@ -73,7 +84,6 @@ export function setupGlobalListeners(User) {
       // Optional: rebuild home page if needed
       // homeBuild(user);
     }
-
     // I Will Work With ThiS |<!{.}!> |
     // <--- <Create Post> --->
     else if (id === "Newpost") {

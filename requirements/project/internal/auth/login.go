@@ -1,17 +1,18 @@
 package auth
 
 import (
-
+	"fmt"
 	db "forum/internal/db"
 	forumerror "forum/internal/error"
- 
+
+	"encoding/json"
 	utils "forum/internal/utils"
 	"net/http"
 	"time"
-	"encoding/json"
 )
 
 func SubmitLogin(w http.ResponseWriter, r *http.Request) {
+    fmt.Println("")
     if r.Method != http.MethodPost {
         forumerror.MethodNotAllowed(w, r)
         return
@@ -63,15 +64,19 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
         })
         return
     }
+
+    fmt.Println("im at before token")
     session := GenerateToken(32)
     http.SetCookie(w, &http.Cookie{
         Name:     "session_token",
         Value:    session,
         Expires:  time.Now().Add(time.Hour),
         HttpOnly: true,
-        SameSite: http.SameSiteStrictMode,
+        //SameSite: http.SameSiteStrictMode,
+        SameSite: http.SameSiteLaxMode, // <- allow JS fetch requests
+
     })
-    
+    fmt.Println("im her after i update session")
     err = db.UpdateUserSession(userId, session)
     if err != nil {
         forumerror.InternalServerError(w, r, err)

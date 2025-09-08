@@ -11,6 +11,7 @@ export function loadChatUI() {
   chatContainer.className = "chat-container";
 
   const chatMain = document.createElement("div");
+  
   chatMain.className = "chat-main";
   chatMain.innerHTML = `
     <div class="chat-header"> real time forume chat </div>
@@ -39,12 +40,10 @@ export function loadChatUI() {
 
   document.body.append(chatContainer);
 
-  
 const params = new URLSearchParams(window.location.search);
 const room = params.get("room") || "general"; 
 
-
-  const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
+const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
 
   socket.onmessage = (event) => {
     try {

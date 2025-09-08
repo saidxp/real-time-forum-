@@ -81,8 +81,8 @@ export async function registerBuilding(user) {
     </div>
 
     <div id="errorMessage" class="error-container" style="display:none; color: rgb(255, 35, 35);"></div>
-    <input type="submit" value="#" />
-    <p>Already have an account? <a href=""#" id = "Login">Login here</a></p>
+    <input type="submit" value="Register" />
+    <p>Already have an account? <a href="#" id="Login"> Login here</a></p>
   `;
 
   container.appendChild(form);
