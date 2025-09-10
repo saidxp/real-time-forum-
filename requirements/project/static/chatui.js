@@ -1,4 +1,4 @@
-export function loadChatUI() {
+export async function loadChatUI() {
   const heder = document.querySelector(".main-content");
   const pagination = document.querySelector(".pagination");
   const footer = document.querySelector(".footer");
@@ -13,7 +13,7 @@ export function loadChatUI() {
   const chatMain = document.createElement("div");
   chatMain.className = "chat-main";
   chatMain.innerHTML = `
-    <div class="chat-header"> real time forume chat </div>
+    <div class="chat-header">Real-Time Forum Chat</div>
     <div id="messages" class="chat-messages">
       <div class="message system">Welcome to the chat!</div>
     </div>
@@ -27,22 +27,34 @@ export function loadChatUI() {
   chatSidebar.className = "chat-sidebar";
   chatSidebar.innerHTML = `
     <h3>Connected</h3>
-    <ul class="user-list" id="userList">
-      <li class="online">zaki</li>
-            <li class="online">said</li>
-
-      
-    </ul>
+    <ul class="user-list" id="userList"></ul>
   `;
 
   chatContainer.append(chatMain, chatSidebar);
-
   document.body.append(chatContainer);
 
-  
-const params = new URLSearchParams(window.location.search);
-const room = params.get("room") || "general"; 
+  // ======= Fetch current user from backend =======
+  let currentUser = { Username: "Anonymous" };
+  try {
+    const res = await fetch("/firststate");
+    const data = await res.json();
+    if (data.authenticated) {
+      currentUser = { Username: data.Username, Initial: data.Initial };
+    }
+  } catch (err) {
+    console.error("Error fetching user state:", err);
+  }
 
+  // Display current user in sidebar
+  const userList = document.getElementById("userList");
+  const li = document.createElement("li");
+  li.className = "online";
+  li.textContent = currentUser.Username;
+  userList.appendChild(li);
+
+  // ======= WebSocket Setup =======
+  const params = new URLSearchParams(window.location.search);
+  const room = params.get("room") || "general";
 
   const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
 
@@ -77,7 +89,7 @@ const room = params.get("room") || "general";
     const input = document.getElementById("msg");
     if (input.value.trim() !== "") {
       const payload = {
-        name: "Me",
+        name: currentUser.Username,
         message: input.value,
       };
       socket.send(JSON.stringify(payload));

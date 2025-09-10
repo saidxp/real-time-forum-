@@ -30,13 +30,15 @@ func FirststateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	confMap["authenticated"] = userID != -1
 	if userID != -1 {
-		confMap["Username"] = username
-		if username != "" {
-			confMap["Initial"] = username[:1]
-		} else {
-			confMap["Initial"] = ""
-		}
+	confMap["userId"] = userID
+	confMap["Username"] = username
+	if username != "" {
+		confMap["Initial"] = username[:1]
+	} else {
+		confMap["Initial"] = ""
 	}
+}
+
 	// ==== PAGINATION ====
 	page, err := Pagination(w, r, confMap)
 	if err != nil {
