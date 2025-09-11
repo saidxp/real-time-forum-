@@ -15,7 +15,6 @@ export async function showPage(page, user, id, curentPage) {
   //const u = await res.json();
   currentPage = page;
   console.log("Showpage id ", id)
-
   if (page === "login") {
     await loginbuilding(user);
   } else if (page === "register") {
