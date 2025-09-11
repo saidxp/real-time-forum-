@@ -103,7 +103,7 @@ export async function homeBuild(user) {
               </a>
             </li>
             <li>
-              <a href="#" id ="OUT" class="header__profile-link">
+              <a href="#" id ="Out" class="header__profile-link">
                 <img src="/static/svg/log-out.svg" class="header__profile-icon" data-action="logout"> Logout
               </a>
             </li>
@@ -112,35 +112,6 @@ export async function homeBuild(user) {
       </ul>
     `;
     actionsDiv.appendChild(profileNav);
-    setTimeout(() => {
-      // Logout Listener
-      const logoutBtn = document.getElementById('OUT');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Logout clicked directly!');
-          Logoutfunc();
-        });
-        console.log('Logout listener added successfully');
-      } else {
-        console.log('Logout button not found!');
-      }
-
-      // Seeting operation her !
-      const accountBtn = document.getElementById('logo');
-      if (accountBtn) {
-        accountBtn.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Account settings clicked!');
-          //handleAccountSettings();
-        });
-        console.log('Account settings listener added successfully');
-      } else {
-        console.log('Account settings button not found!');
-      }
-    }, 110);
     // <==========> her i will add event listner about (filter)
     /// her >>>> 
     //  <==================================================>
@@ -153,7 +124,7 @@ export async function homeBuild(user) {
     `);
     actionsDiv.appendChild(authLinks);
   }
-  // 
+  // |< <==-|-==> >|
   header.appendChild(actionsDiv);
   body.insertBefore(header, body.firstChild);
   // build hero !!

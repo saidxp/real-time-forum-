@@ -32,7 +32,7 @@ export async function NewPost(categories = []) {
     header.innerHTML = `
       <div class="header__logo">
         <div id ="logo" class="header__logo-link">
-          <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+          <img id ="logo" src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
         </div>
       </div>
       <div class="header__filter">
