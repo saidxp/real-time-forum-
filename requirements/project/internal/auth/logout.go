@@ -23,12 +23,28 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	
 	sessionToken := sessionCookie.Value
 
-	// her i will reset session !!
-	hasSession, err := db.ResetUserSession(sessionToken)
+	userId, hasSession, err := db.SelectUserSession(sessionToken)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
+
+	ok, err := db.ResetUserSession(sessionToken)
+	if err != nil {
+		forumerror.InternalServerError(w, r, err)
+		return
+	}
+	if !ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid session",
+		})
+		return
+	}
+
+	delete(OnlineUsers, userId)
+	BroadcastUsers() // This now works without import cycle
 
 	// Clear the session cookie on the client side Front !!!
 	clearCookie := &http.Cookie{
@@ -52,7 +68,6 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//  <==================>
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":  "Logged out successfully",

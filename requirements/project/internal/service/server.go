@@ -24,14 +24,20 @@ func InitDependencies() {
 func forumMux() *http.ServeMux {
 	forumux := http.NewServeMux()
 
+	// Create hub first
+	hub := handler.NewHub()
+
+	// Set the global hub in auth package to avoid import cycle
+	auth.GlobalHub = hub
+
 	// root mux ====> i will check it roooooooooooot !!! >>
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
-	/// 
+	///
 	forumux.HandleFunc("/api/me", middleware.InjectUser(handler.FirststateHandler))
 	// <=========================|-|=============================>
 	// Her i will get filter post or post !!
 	forumux.HandleFunc("/api/posts", middleware.InjectUser(handler.PostsHandlerApi))
-	
+
 	// authontication mux
 	forumux.HandleFunc("/login", auth.SubmitLogin)
 	// ===== log out function !!
@@ -41,25 +47,9 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/register", middleware.InjectUser(auth.SubmitRegister))
 	forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 	forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
-	
 
-	// profile mux
-	//forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
-	//forumux.HandleFunc("/profile/update/{value}", middleware.AuthMidleware(handler.UpddateProfile))
-	//forumux.HandleFunc("/profile/update/{value}/save", middleware.AuthMidleware(handler.SaveChanges))
-	//forumux.HandleFunc("/profile/delete", middleware.AuthMidleware(handler.ServeDelete))
-	//forumux.HandleFunc("POST /profile/delete/confirm", middleware.AuthMidleware(handler.DeleteConfirmation))
-
-	// New Post ux <<<====|||====>>>
-	//forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
-
-	// like dislike
-	//forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
-	//forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
-	// post
-	//forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 
 	// comment like dislike
 	forumux.HandleFunc("/commentLike", middleware.AuthMidleware(handler.CommentLikeHandler))
@@ -67,12 +57,12 @@ func forumMux() *http.ServeMux {
 
 	// static mux
 	forumux.HandleFunc("/static/", handler.StaticHandler)
-	hub := handler.NewHub()
+
+	// WebSocket endpoint for chat
 	forumux.HandleFunc("/room", hub.ServeWs)
 
 	return forumux
 }
-
 func StartServer() {
 	server := &http.Server{
 		Addr:    repo.PORT,
