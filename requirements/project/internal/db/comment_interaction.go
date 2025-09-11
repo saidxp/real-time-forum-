@@ -180,6 +180,7 @@ func IsCommentLikedByUser(userId, commentId int) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+
 }
 
 func IsCommentDisikedByUser(userId, commentId int) (bool, error) {

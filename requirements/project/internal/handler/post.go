@@ -72,13 +72,12 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		resp.PrevPage = r.URL.Path + "?" + prevQuery.Encode()
 	}
 
-	// ====== Comments ======
+	// ====== < Comments >======
 	comments, totalComments, err := db.GetCommentsByPostPaginated(Id, page, userID)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-
 	if float64(page) > math.Ceil(float64(totalComments)/10) && totalComments > 0 {
 		forumerror.BadRequest(w, r)
 		return
@@ -87,7 +86,6 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		forumerror.BadRequest(w, r)
 		return
 	}
-
 	resp.Comments = comments
 	resp.HasNext = totalComments > page*10
 	if resp.HasNext {
@@ -95,10 +93,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		nextQuery.Set("page", strconv.Itoa(page+1))
 		resp.NextPage = r.URL.Path + "?" + nextQuery.Encode()
 	}
-
 	// ====== Mark as success ======
-	resp.Success = true
-	fmt.Println(resp.Post.Content)
+	resp.Success = true	
+	fmt.Println(resp.Comments)
 	// ====== Send JSON ======
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

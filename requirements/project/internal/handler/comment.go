@@ -1,23 +1,32 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
-	"forum/internal/db"
-	forumerror "forum/internal/error"
-	repo "forum/internal/repository"
-	"forum/internal/utils"
 	"net/http"
 	"strconv"
 	"strings"
+ 	"forum/internal/db"
+	forumerror "forum/internal/error"
+	repo "forum/internal/repository"
+	"forum/internal/utils"
 )
 
 func CommentHandler(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		forumerror.MethodNotAllowed(w, r)
 		return
 	}
 
+	// I Will Check The Parse Value Of Pagination Her To Now Where I Will get the
+	Current , _ := strconv.Atoi(r.FormValue("currentPage"))
+ 
+
 	userId := r.Context().Value(repo.USER_ID_KEY).(int)
+	fmt.Println("===== id user")
+	fmt.Println(userId)
+	fmt.Println("===========")
 	IsUserCanCommenttToday, err := db.IsUserCanCommentToday(userId)
 	if !IsUserCanCommenttToday {
 		forumerror.TooManyRequests(w, r, "comments")
@@ -44,18 +53,33 @@ func CommentHandler(w http.ResponseWriter, r *http.Request) {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-
 	comment := strings.TrimSpace(r.FormValue("comment"))
 	if comment == "" {
 		link := fmt.Sprintf("%s#comment", r.Header.Get("Referer"))
 		http.Redirect(w, r, link, http.StatusSeeOther)
 		return
 	}
+
 	err = db.AddNewComment(r.Context().Value(repo.USER_ID_KEY).(int), int(postId), r.FormValue("comment"))
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-	link := fmt.Sprintf("%s#comment", r.Header.Get("Referer"))
-	http.Redirect(w, r, link, http.StatusSeeOther)
+	SENDCOMMENT, _, err := db.GetCommentsByPostPaginated(int(postId), Current, userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var response interface{}
+	if Current == 1 {
+		 
+		response = SENDCOMMENT[0]
+	} else {
+ 		response = map[string]interface{}{
+			"no": true,
+		}
+	}
+	// Send JSON ==================> TO FRONT JS 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

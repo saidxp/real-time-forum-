@@ -1,5 +1,6 @@
 import { homeBuild } from "./buildhome.js";
 import { Addeventlistnerandpost } from "./setevrntlisnter.js";
+import { showPage } from "./main.js";
 
 export async function loginbuilding() {
 
@@ -12,13 +13,14 @@ export async function loginbuilding() {
     m.style.display = "";  
     m.innerHTML = ""; 
   }
+
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
     formsCSS.rel = 'stylesheet';
     formsCSS.href = '/static/css/forms.css';
     document.head.appendChild(formsCSS);
   }
-  
+
   const mainContent = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
   const pagination = document.querySelector('.pagination');
@@ -131,10 +133,12 @@ export async function loginbuilding() {
           mobileHeader.innerHTML = "";
           mobileHeader.style.display = "none";
         }
-
+        
         const res = await fetch("/api/me");
         const user = await res.json();
-        await homeBuild(user)
+        await showPage("home", user);
+        sessionStorage.setItem("currentPage", "home");
+        //await homeBuild(user)
       } else {
         errorMessage.style.display = "block";
         errorMessage.textContent = result.message || "Login failed";

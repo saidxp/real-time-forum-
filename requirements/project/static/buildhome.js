@@ -21,7 +21,7 @@ export async function homeBuild(user) {
             </section>
         `;
   }
-  
+
   // END OF ADDITION
   function createEl(tag, className = '', html = '') {
     const el = document.createElement(tag);
@@ -158,7 +158,7 @@ export async function homeBuild(user) {
   body.insertBefore(header, body.firstChild);
   // build hero !!
   buildHero(user)
-  // Get Post <==!!==>
+  // Get <===> Post <==!!==>
   fetchPosts("")
 }
 

@@ -4,7 +4,9 @@ import { NewPost } from "./newpost.js"
 import {POST} from "./post.js"
 import { homeBuild } from "./buildhome.js";
 import { fetchPosts } from "./setevrntlisnter.js";
+import{showPage} from "./main.js"
 // Set up a single global listener for hero + header links
+
 export function setupGlobalListeners(User) {
   document.addEventListener("click", async (event) => {
     let target = event.target;
@@ -40,15 +42,18 @@ export function setupGlobalListeners(User) {
     console.log("<=(state)=====")
     console.log(user)
     console.log("===========")
-
     console.log("======her about post isolation====")
+    
     if (POSTID) {
       console.log("Yes, clicked readmore!");
       const postId = POSTID.dataset.id; // 
       console.log("Post ID:", postId);
       console.log(typeof(postId))
-      // her i will call the post isoaltion 
-      POST(postId, user) 
+      // Her I Will Call The Post Isoaltion ...
+      //POST(postId, user) 
+      await showPage("Post", user, postId);
+      sessionStorage.setItem("currentPage", "Post");
+      console.log("Login clicked!");
     }
     console.log("=====================")
     //while (target && tmodulearget.tagName !== "A") {
@@ -61,13 +66,16 @@ export function setupGlobalListeners(User) {
     // SWITCH CASE WILL BE GOOD LATER !
     // --- <Login> ---
     if (id === "Login") {
-      loginbuilding(user);
+      await showPage("login", user);
+      sessionStorage.setItem("currentPage", "login");
       console.log("Login clicked!");
     }
     // --- <Register> ---
     else if (id === "Register") {
       event.preventDefault();
-      registerBuilding();
+      await showPage("register", user);
+      sessionStorage.setItem("currentPage", "register");
+      //registerBuilding();
       console.log("Register clicked!");
     }
 
@@ -76,23 +84,22 @@ export function setupGlobalListeners(User) {
       await Logoutfunc();
       console.log("Logout clicked!");
     }
-
     // --- <Logo> ---
     else if (id === "Logo" || id === "logo") {
       console.log("Logo clicked!");
-
-      // Optional: rebuild home page if needed
-      // homeBuild(user);
     }
     // I Will Work With ThiS |<!{.}!> |
-    // <--- <Create Post> --->
+    // <--- <Create Post> ---> !!
     else if (id === "Newpost") {
       console.log("Create Post clicked!");
       // call your create post function
       // I Will CHECK If It's Autenticate Or No !!
       // IF TRUE AUT ELSE GO TO LOGIN !!
       if (user.authenticated) {
-        NewPost(Object.keys(user.fileds))
+        // < Show Page Her Of The New Post! >!!
+        await showPage("Newpost", user);
+        sessionStorage.setItem("currentPage", "Newpost");
+        //NewPost(Object.keys(user.fileds))
       } else {
         // if ther user is not authenticated it's must be login first !
         loginbuilding()
@@ -102,8 +109,8 @@ export function setupGlobalListeners(User) {
     else if (id === "Profile") {
       console.log("Profile clicked!");
       // call profile page function
-    }
 
+    }
   });
 
 }
