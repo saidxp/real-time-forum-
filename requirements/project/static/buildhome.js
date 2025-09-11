@@ -1,7 +1,6 @@
 import { fetchPosts } from "./setevrntlisnter.js";
 import { Logoutfunc } from "./event.js"
 import { Addeventlistnerandpost } from "./setevrntlisnter.js";
-import {loadChatUI}from "./chatui.js"
 
 // build home it's separate from main !!
 export async function homeBuild(user) {
@@ -48,8 +47,6 @@ export async function homeBuild(user) {
 
   // User actions container
   const actionsDiv = createEl("div", "user_actions--header");
-  const button = createEl("button","chat",`chat`)
- actionsDiv.appendChild(button)
 
   // Filter nav
   const nav = createEl("nav", "profile-nav");
@@ -58,10 +55,7 @@ export async function homeBuild(user) {
   const filterDiv = createEl("div", "header__filter-label");
   filterDiv.innerHTML = `Filter <img src="/static/svg/filter.svg" alt="Filter by Categories">`;
   liDropdown.appendChild(filterDiv);
-actionsDiv.appendChild(button)
-button.addEventListener("click",()=>{
-loadChatUI()
-})
+
   const filterUl = createEl("ul");
   if (user.fileds) {
     Object.keys(user.fileds).forEach(key => {

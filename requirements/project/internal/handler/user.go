@@ -5,12 +5,10 @@ import (
 )
 
 type user struct {
-    name    string
-    socket  *websocket.Conn
-    recieve chan []byte
-    room    *room
+	socket  *websocket.Conn
+	recieve chan []byte
+	room    *room
 }
-
 
 func (c *user) read() {
 	for {
@@ -31,4 +29,3 @@ func (c *user) write() {
 		}
 	}
 }
-
