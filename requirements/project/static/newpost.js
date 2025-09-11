@@ -1,5 +1,5 @@
 import { homeBuild } from "./buildhome.js";
-
+import { showPage } from "./main.js";
 
 export async function NewPost(categories = []) {
     // Load CSS
@@ -31,9 +31,9 @@ export async function NewPost(categories = []) {
     const header = createEl("header", "header");
     header.innerHTML = `
       <div class="header__logo">
-        <a href="/" class="header__logo-link">
+        <div id ="logo" class="header__logo-link">
           <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
-        </a>
+        </div>
       </div>
       <div class="header__filter">
         <h2>Create a new post</h2>
@@ -139,7 +139,11 @@ export async function NewPost(categories = []) {
             errorMessage.style.display = "none";
             const Stat = await fetch("/api/me");
             const user = await Stat.json();
-            homeBuild(user)
+            // Her I Will Handle It By !!!
+            await showPage("home", user);
+            sessionStorage.setItem("currentPage", "home");
+            //localStorage.setItem("")
+            //homeBuild(user)
             form.reset()
         } catch (err) {
             errorMessage.innerText = "Network error: " + err.message;

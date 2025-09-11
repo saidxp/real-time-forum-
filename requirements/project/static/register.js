@@ -33,9 +33,9 @@ export async function registerBuilding(user) {
   const header = createEl("header", "header");
   header.innerHTML = `
     <div class="header__logo">
-      <a href="/" class="header__logo-link">
+      <div class="header__logo-link">
         <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
-      </a>
+      </div>
     </div>
 
     <div class="header__filter">

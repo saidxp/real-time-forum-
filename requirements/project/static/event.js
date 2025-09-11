@@ -44,9 +44,9 @@ export async function loginbuilding() {
   // === Header ===
   const headerContent = `
     <div class="header__logo">
-      <a href="/" class="header__logo-link">
+      <div  class="header__logo-link">
         <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
-      </a>
+      </div>
     </div>
     <div class="header__filter">
       <h2>Login to your account</h2>
@@ -166,7 +166,9 @@ export async function Logoutfunc() {
       console.log(data.message);
       const res = await fetch("/api/me");
       const user = await res.json();
-      await loginbuilding()
+      await showPage("login", user)
+      sessionStorage.setItem("currentPage", "login")
+      //await loginbuilding()
     } else {
       console.error("Logout error:", data.error);
       alert("Logout failed: " + data.error);

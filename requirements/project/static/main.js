@@ -3,6 +3,7 @@ import {loginbuilding} from "./event.js"
 import { homeBuild } from "./buildhome.js";
 import { registerBuilding } from "./register.js";
 import { POST } from "./post.js";
+import { NewPost } from "./newpost.js";
 //import {loadChatUI}from "./chatui.js"
 
 //loadChatUI()
@@ -10,7 +11,7 @@ import { POST } from "./post.js";
 let currentPage = "login";
 
 export async function showPage(page, user, id, curentPage) {
-  // check every time the state of user to not lose it in refrech !!
+  //check every time the state of user to not lose it in refrech !!
   //const R = await fetch("/api/me");
   //const u = await res.json();
   currentPage = page;
@@ -20,6 +21,7 @@ export async function showPage(page, user, id, curentPage) {
   } else if (page === "register") {
     await registerBuilding(user);
   } else if (page === "home") {
+    console.log("howa ola machy hwa howa olahhe tahwa ")
     await homeBuild(user);
   }else if(page  === "Newpost") {
     NewPost(Object.keys(user.fileds))
@@ -38,44 +40,24 @@ export async function showPage(page, user, id, curentPage) {
         await showPage("home", user);
       }
   }
-
 }
 
-
 window.onload = async () => {
+  //  her i will fetch the state off it !
   const res = await fetch("/api/me");
   const user = await res.json();
-  //<====> Her I Will <====> 
-  //console.log(user)
-  // I WILL HANDLE THE DIRECTION OF THE ROUTE to be every time at the route who i want
-  //console.log(user)
-
-  /*if (!user.authenticated) {
-    console.log("<== Her User Is Still Not Login ==>")
-    // I WILL CALL Login Page !! ==> Her <== !
-    loginbuilding(user)
-    //setupGlobalListeners(user)
-  }else {
-  // Her I Build Header >> !-! << 
-  await homeBuild(user);
-  // her i build hero section !!
-  // her i add event-listner and post by click !!
-  // Fetch Posts Her In First Load !! 
-   // <=====> \\ 
-  // than i add event listner her for filters !!
-  // and i fetch the post by click of users !!
-  // <====> 
-   // Todo://all categorie still need fix !!
-  // <====>
-  // i need to set all event listner on Buthon 
-  //setupGlobalListeners(user)
-  //addevenlistnertohero
-    console.log("Hello")
+  if (!user || !user.authenticated) {
+    currentPage = "login";
+  } else {
+    // Authenticated: either restore saved page or default to home
+    const savedPage = sessionStorage.getItem("currentPage");
+    currentPage = savedPage || "home";
   }
-    */
-    // restore from sessionStorage if available
+  // Soo Her I Will Handle When The User It's Autenticated It's Will
+  // restore from sessionStorage if available
   const savedPage = sessionStorage.getItem("currentPage");
   if (savedPage) currentPage = savedPage;
   await showPage(currentPage, user);
   setupGlobalListeners(user)
+  // If the backend says "not authenticated", force login page.
 };

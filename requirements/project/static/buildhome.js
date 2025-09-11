@@ -37,17 +37,17 @@ export async function homeBuild(user) {
   // Build the header dynamically
   const body = document.body;
   const header = createEl("header", "header");
-  // Logo
+
+  // Logo handler !!
   const logoDiv = createEl("div", "header__logo", `
-    <a href="/" id = "Logo" class="header__logo-link">
-      <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img">
+    <a id = "Logo" class="header__logo-link">
+      <img id = "Logo" src="/static/svg/logo.svg" alt="Logo" class="header__logo-img">
     </a>
   `);
-  header.appendChild(logoDiv);
 
+  header.appendChild(logoDiv);
   // User actions container
   const actionsDiv = createEl("div", "user_actions--header");
-
   // Filter nav
   const nav = createEl("nav", "profile-nav");
   const ul = createEl("ul");
@@ -161,15 +161,13 @@ export async function homeBuild(user) {
   // Get <===> Post <==!!==>
   fetchPosts("")
 }
-
 function buildHero(user) {
   const hero = document.querySelector(".hero");
   hero.innerHTML = `
     <h1 class="hero__title">Welcome to the Forum</h1>
     <div class="hero__cta">
       ${user.authenticated
-      ? `<a href="/newPost" id ="Newpost"  class="btn-secondary">Create Post</a>
-           <a href="/profile" id = "Profile"  class="btn-secondary">Profile</a>`
+      ? `<a id ="Newpost"  class="btn-secondary">Create Post</a>`
       : `<a href="#" id = "Login"  class="btn-secondary">Login</a>
            <a href="#" id = "Register"  class="btn-secondary">Sign Up</a>`}
     </div>

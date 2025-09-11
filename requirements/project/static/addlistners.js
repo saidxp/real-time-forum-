@@ -21,6 +21,7 @@ export function setupGlobalListeners(User) {
 
       const res = await fetch("/api/me");
       const user = await res.json();
+      // her i will handle the showpage home !!
       await homeBuild(user);      
       fetchPosts(filter);          
       return;                       
@@ -29,10 +30,6 @@ export function setupGlobalListeners(User) {
     const POSTID = event.target.closest("a.readmore");
     // stop for not refrech !! <=> 
     //event.preventDefault();
-
-    console.log("======= Test Event of READ MORE")
-    console.log(POSTID)
-    console.log("===============================")
     // her i will fetch the state of user if he is  Authenicate or NO ...!! 
     // <=====================>
     const res = await fetch("/api/me");
@@ -81,12 +78,16 @@ export function setupGlobalListeners(User) {
 
     // --- <Logout> ---
     else if (id === "Out") {
+      // Her I Will Handle The Logout Her !
       await Logoutfunc();
       console.log("Logout clicked!");
     }
     // --- <Logo> ---
-    else if (id === "Logo" || id === "logo") {
+    else if (id === "Logo") {
       console.log("Logo clicked!");
+      await showPage("home", user)
+      sessionStorage.setItem("currentPage", "home")
+      // <| Her I Will Check This Her If It's Clicked To Refrech All Page With News! |>
     }
     // I Will Work With ThiS |<!{.}!> |
     // <--- <Create Post> ---> !!

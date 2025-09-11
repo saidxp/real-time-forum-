@@ -17,7 +17,7 @@ export async function POST(id, user, page=1) {
   }
   if (mobileHeader) {
     mobileHeader.innerHTML = `
-      <div class="logo"><img src="/static/svg/logo.svg" alt="Logo"></div>
+      <div class="logo"><img id="Logo" src="/static/svg/logo.svg" alt="Logo"></div>
       <div class="mobileHeader_profile">
         <nav class="profile-nav">
           <ul>
@@ -28,7 +28,7 @@ export async function POST(id, user, page=1) {
               </div>
               <ul>
                 <li><a href="/profile"><img src="/static/svg/bolt.svg" /> Account Settings</a></li>
-                <li><a href="/logout"><img src="/static/svg/log-out.svg" /> Logout</a></li>
+                <li><a id ="Out"> <img src="/static/svg/log-out.svg" /> Logout</a></li>
               </ul>
             </li>
           </ul>
