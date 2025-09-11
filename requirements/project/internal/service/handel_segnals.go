@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func HandleSignals(server *http.Server) {
+func  HandleSignals(server *http.Server) {
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
 
