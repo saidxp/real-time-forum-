@@ -7,7 +7,7 @@ import { loadChatUI } from "./chatui.js";
 
 let currentPage = "login";
 
-export async function showPage(page, user, id, curentPage) {
+export async function showPage(page, user, id, curentPage, targetUser = null) {
   currentPage = page;
   console.log("Showpage id ", id)
   
@@ -34,9 +34,24 @@ export async function showPage(page, user, id, curentPage) {
       await showPage("home", user);
     }
   } else if (page === "chat") {
-    // Load chat UI
-    await loadChatUI();
+    // Load private chat UI with target user
+    // If no targetUser is provided, loadChatUI will show user selection
+    await loadChatUI(targetUser);
   }
+}
+
+// Function to start a private chat with a specific user
+export async function startPrivateChat(targetUsername) {
+  const res = await fetch("/api/me");
+  const user = await res.json();
+  
+  if (!user.authenticated) {
+    alert("You must be logged in to chat");
+    return;
+  }
+  
+  await showPage("chat", user, null, null, targetUsername);
+  sessionStorage.setItem("currentPage", "chat");
 }
 
 window.onload = async () => {

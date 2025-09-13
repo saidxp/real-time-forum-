@@ -44,7 +44,7 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-
+   
 	if (!utils.ValidUsername(username) && !utils.ValidEmail(username)) || !utils.ValidPassword(password) || !exist {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]any{
@@ -84,7 +84,8 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-	
+    fmt.Println(username)
+    // 
 	OnlineUsers[userId] = username
 	BroadcastUsers() // This now works without import cycle
 

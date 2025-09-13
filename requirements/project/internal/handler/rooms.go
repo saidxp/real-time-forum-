@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,6 +29,13 @@ func (h *Hub) BroadcastToAllRooms(message []byte) {
 			// Room channel is full, skip
 		}
 	}
+}
+
+// CreatePrivateRoomName creates a consistent room name for two users
+func CreatePrivateRoomName(user1, user2 string) string {
+	users := []string{user1, user2}
+	sort.Strings(users) // Always sort to ensure consistent room names
+	return "private_" + strings.Join(users, "_")
 }
 
 // GetRoom returns an existing room or creates a new one
@@ -119,36 +128,67 @@ var upgrader = &websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-// ServeWs upgrades HTTP requests to WebSocket connections
+// ServeWs upgrades HTTP requests to WebSocket connections for private chat
 func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
-	roomName := req.URL.Query().Get("room")
-	if roomName == "" {
-		http.Error(w, "Room not specified", http.StatusBadRequest)
-		return
-	}
+    roomName := req.URL.Query().Get("room")
+    user1 := req.URL.Query().Get("user1")
+    user2 := req.URL.Query().Get("user2")
+    currentUser := req.URL.Query().Get("username")
 
-	username := req.URL.Query().Get("username")
-	if username == "" {
-		username = "Anonymous"
-	}
+    if currentUser == "" {
+        currentUser = "Anonymous"
+    }
 
-	socket, err := upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		log.Println("Upgrade error:", err)
-		return
-	}
+    // Case 1: Public room
+    if roomName != "" {
+        socket, err := upgrader.Upgrade(w, req, nil)
+        if err != nil {
+            log.Println("Upgrade error:", err)
+            return
+        }
 
-	r := h.GetRoom(roomName)
-	user := &user{
-		name:    username,
-		socket:  socket,
-		recieve: make(chan []byte, messageBuffersize),
-		room:    r,
-	}
-	r.join <- user
+        r := h.GetRoom(roomName)
+        user := &user{
+            name:    currentUser,
+            socket:  socket,
+            recieve: make(chan []byte, messageBuffersize),
+            room:    r,
+        }
+        r.join <- user
+        defer func() { r.leave <- user }()
+        go user.write()
+        user.read()
+        return
+    }
 
-	defer func() { r.leave <- user }()
+    // Case 2: Private chat
+    if user1 == "" || user2 == "" {
+        http.Error(w, "Must specify room or both user1/user2", http.StatusBadRequest)
+        return
+    }
 
-	go user.write()
-	user.read()
+    if currentUser != user1 && currentUser != user2 {
+        http.Error(w, "You can only join your own private chats", http.StatusForbidden)
+        return
+    }
+
+    roomName = CreatePrivateRoomName(user1, user2)
+
+    socket, err := upgrader.Upgrade(w, req, nil)
+    if err != nil {
+        log.Println("Upgrade error:", err)
+        return
+    }
+
+    r := h.GetRoom(roomName)
+    user := &user{
+        name:    currentUser,
+        socket:  socket,
+        recieve: make(chan []byte, messageBuffersize),
+        room:    r,
+    }
+    r.join <- user
+    defer func() { r.leave <- user }()
+    go user.write()
+    user.read()
 }

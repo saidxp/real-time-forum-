@@ -28,6 +28,7 @@ func forumMux() *http.ServeMux {
 	hub := handler.NewHub()
 
 	// Set the global hub in auth package to avoid import cycle
+	// Cast to the interface type
 	auth.GlobalHub = hub
 
 	// root mux ====> i will check it roooooooooooot !!! >>
@@ -37,6 +38,9 @@ func forumMux() *http.ServeMux {
 	// <=========================|-|=============================>
 	// Her i will get filter post or post !!
 	forumux.HandleFunc("/api/posts", middleware.InjectUser(handler.PostsHandlerApi))
+
+	// API endpoint for getting online users for chat
+	forumux.HandleFunc("/api/online-users", middleware.InjectUser(handler.OnlineUsersHandler))
 
 	// authontication mux
 	forumux.HandleFunc("/login", auth.SubmitLogin)
@@ -58,7 +62,7 @@ func forumMux() *http.ServeMux {
 	// static mux
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 
-	// WebSocket endpoint for chat
+	// WebSocket endpoint for private chat
 	forumux.HandleFunc("/room", hub.ServeWs)
 
 	return forumux

@@ -1,17 +1,30 @@
-export async function loadChatUI() {
+async function loadCurrentUser() {
+  try {
+    const response = await fetch("/api/me");
+    const data = await response.json();
+    const el = document.getElementById("currentUser");
+    if (el) el.textContent = `Logged in as: ${data.username}`;
+  } catch (err) {
+    console.error("Error loading current user:", err);
+  }
+}
+
+loadCurrentUser();
+
+export async function loadChatUI(targetUser = null) {
   // Clean up existing content
   const existingElements = [
     ".main-content", 
     ".pagination", 
     ".footer",
-    ".chat-container" // Also remove existing chat if any
+    ".chat-container"
   ];
-  
   existingElements.forEach(selector => {
     const element = document.querySelector(selector);
     if (element) element.remove();
   });
 
+  // Chat container + sidebar
   const chatContainer = document.createElement("div");
   chatContainer.className = "chat-container";
 
@@ -41,10 +54,9 @@ export async function loadChatUI() {
   chatContainer.append(chatMain, chatSidebar);
   document.body.append(chatContainer);
 
-  // Add styles for better UI
   addChatStyles();
 
-  // ======= Fetch current user from backend =======
+  // ======= Fetch current user =======
   let currentUser = { Username: "Anonymous" };
   try {
     const res = await fetch("/api/me");
@@ -57,32 +69,28 @@ export async function loadChatUI() {
   }
 
   // ======= WebSocket Setup =======
-  const params = new URLSearchParams(window.location.search);
-  const room = params.get("room") || "general"; 
+  let socketUrl;
+  if (targetUser) {
+    socketUrl = `ws://${location.host}/room?user1=${currentUser.Username}&user2=${targetUser}&username=${currentUser.Username}`;
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room") || "general";
+    socketUrl = `ws://${location.host}/room?room=${room}&username=${currentUser.Username}`;
+  }
 
-  const socket = new WebSocket(`ws://${location.host}/room?room=${room}&username=${currentUser.Username}`);
+  const socket = new WebSocket(socketUrl);
 
-  socket.onopen = () => {
-    console.log("Connected to chat server");
-    addSystemMessage("Connected to server");
-  };
-
-  socket.onclose = () => {
-    console.log("Disconnected from chat server");
-    addSystemMessage("Disconnected from server");
-  };
-
+  socket.onopen = () => addSystemMessage("Connected to server");
+  socket.onclose = () => addSystemMessage("Disconnected from server");
   socket.onerror = (error) => {
     console.error("WebSocket error:", error);
     addSystemMessage("Connection error occurred");
   };
-
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-
       if (data.type === "users") {
-        updateUserList(data.list);
+        loadOnlineUsers();
       } else if (data.type === "message") {
         addChatMessage(data.name, data.message);
       }
@@ -91,35 +99,17 @@ export async function loadChatUI() {
     }
   };
 
-  function updateUserList(users) {
-    const userList = document.getElementById("userList");
-    userList.innerHTML = "";
-    users.forEach((username) => {
-      const li = document.createElement("li");
-      li.className = "online";
-      li.innerHTML = `
-        <span class="user-status"></span>
-        <span class="user-name">${username}</span>
-      `;
-      userList.appendChild(li);
-    });
-  }
-
   function addChatMessage(username, message) {
     const msgContainer = document.createElement("div");
     msgContainer.classList.add("message-container");
-    
-    // Check if it's current user's message
     if (username === currentUser.Username) {
       msgContainer.classList.add("own-message");
     }
-
     msgContainer.innerHTML = `
       <div class="username">${username}</div>
       <div class="message">${escapeHtml(message)}</div>
       <div class="timestamp">${new Date().toLocaleTimeString()}</div>
     `;
-
     const messagesDiv = document.getElementById("messages");
     messagesDiv.appendChild(msgContainer);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -129,14 +119,13 @@ export async function loadChatUI() {
     const msgContainer = document.createElement("div");
     msgContainer.classList.add("message", "system");
     msgContainer.textContent = message;
-
     const messagesDiv = document.getElementById("messages");
     messagesDiv.appendChild(msgContainer);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
   function escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
@@ -144,7 +133,6 @@ export async function loadChatUI() {
   function sendMessage() {
     const input = document.getElementById("msg");
     const message = input.value.trim();
-    
     if (message !== "") {
       const payload = {
         type: "message",
@@ -159,26 +147,58 @@ export async function loadChatUI() {
   // Event listeners
   document.getElementById("sendBtn").addEventListener("click", sendMessage);
   document.getElementById("msg").addEventListener("keypress", (event) => {
-    if (event.key === "Enter") {
-      sendMessage();
-    }
+    if (event.key === "Enter") sendMessage();
   });
-
-  // Back to forum button
   document.getElementById("backToForum").addEventListener("click", async () => {
     socket.close();
     const res = await fetch("/api/me");
     const user = await res.json();
-    
-    // Import showPage dynamically to avoid circular imports
     const { showPage } = await import("./main.js");
     await showPage("home", user);
     sessionStorage.setItem("currentPage", "home");
   });
 
-  // Focus on input
   document.getElementById("msg").focus();
 }
+
+async function loadOnlineUsers() {
+  try {
+    const response = await fetch("/api/online-users");
+    const data = await response.json();
+    const userList = document.getElementById("userList");
+    userList.innerHTML = "";
+
+    if (data.users && data.users.length > 0) {
+      data.users.forEach((username) => {
+        const li = document.createElement("li");
+        li.className = "online-user";
+        li.setAttribute("data-username", username);
+        li.innerHTML = `<span class="status-dot"></span>${username}`;
+        li.addEventListener("click", () => {
+          import("./main.js").then(({ startPrivateChat }) => {
+            startPrivateChat(username);
+          });
+        });
+        userList.appendChild(li);
+      });
+    } else {
+      userList.innerHTML = `<li><em>No other users online</em></li>`;
+    }
+  } catch (err) {
+    console.error("Error loading online users:", err);
+    const userList = document.getElementById("userList");
+    if (userList) {
+      userList.innerHTML = `<li><em>Error loading online users</em></li>`;
+    }
+  }
+}
+
+// function addChatStyles() {
+//   const styles = `/* same styles you had, unchanged */`;
+//   const styleSheet = document.createElement("style");
+//   styleSheet.textContent = styles;
+//   document.head.appendChild(styleSheet);
+// }
 
 function addChatStyles() {
   const styles = `

@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 )
 
-// Global hub instance - will be set from main or wherever you initialize the hub
-var GlobalHub interface {
+// Define an interface for broadcasting without importing handler
+type Broadcaster interface {
 	BroadcastToAllRooms([]byte)
 }
+
+// Global hub instance - use interface to avoid import cycle
+var GlobalHub Broadcaster
 
 func BroadcastUsers() {
 	if GlobalHub == nil {
