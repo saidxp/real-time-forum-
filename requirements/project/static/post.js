@@ -103,6 +103,7 @@ export function Create({ post, comments = [],user, footerEl, Pagination=null}) {
         <section><p>${post.Content}</p></section>
         <span class="divider"></span>
         <footer>
+        <div class="post" id="post-${post.Id}">
           <section id="likes_dislikes">
             <form action="/like" method="POST">
               <input type="hidden" name="post_id" value="${post.Id}">
@@ -119,6 +120,7 @@ export function Create({ post, comments = [],user, footerEl, Pagination=null}) {
               </button>
             </form>
           </section>
+          </div>
         </footer>
       </div>
     </div>
@@ -202,6 +204,73 @@ const commentFormHTML = `
   }
   
   if (main) main.innerHTML = postHTML + commentFormHTML + `<div class="comments-list">${commentsHTML}</div>` + paginationHTML;
+
+  const likeForm = document.querySelector('#likes_dislikes form[action="/like"]');
+  const dislikeForm = document.querySelector('#likes_dislikes form[action="/dislike"]');
+
+  if (likeForm) {
+    likeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(likeForm);
+      try {
+        const res = await fetch('/like', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) throw new Error('Failed to submit like');
+        const result = await res.json();
+        console.log('Like response:', result.data);
+        updateLikeDislikeUI(result.data);
+        
+      } catch (err) {
+        console.error('Error submitting like:', err);
+        alert('Failed to like post. Please try again.');
+      }
+    });
+  }
+
+  if (dislikeForm) {
+    dislikeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(dislikeForm);
+      try {
+        const res = await fetch('/dislike', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) throw new Error('Failed to submit dislike');
+        const result = await res.json();
+        console.log("howa")
+        console.log('Dislike response:', result.data);
+        // Update the UI with new like/dislike counts
+        updateLikeDislikeUI(result.data);
+        
+      } catch (err) {
+        console.error('Error submitting dislike:', err);
+        alert('Failed to dislike post. Please try again.');
+      }
+    });
+}
+
+  // <===>
+  function updateLikeDislikeUI(result) {
+    const container = document.querySelector(`#post-${result.Id}`);
+    if (!container) return;
+    const likeBtn = container.querySelector('.likebtn');
+    const dislikeBtn = container.querySelector('.dislikebtn');
+    if (likeBtn && result.Likes !== undefined) {
+      likeBtn.innerHTML = `
+        <img src="/static/svg/${result.IsLikedByUser ? 'green_like' : 'like'}.svg" alt="like">
+        ${result.Likes}
+      `;
+    }
+    if (dislikeBtn && result.Dislikes !== undefined) {
+      dislikeBtn.innerHTML = `
+        <img src="/static/svg/${result.IsDislikedByUser ? 'red_dislike' : 'dislike'}.svg" alt="dislike">
+        ${result.Dislikes}
+      `;
+    }
+  }
 
   //if (main) main.innerHTML = postHTML + commentFormHTML + commentsHTML + paginationHTML;
   // === Footer ===

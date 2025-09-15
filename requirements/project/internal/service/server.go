@@ -53,8 +53,8 @@ func forumMux() *http.ServeMux {
 	//forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
 
 	// like dislike
-	//forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
-	//forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
+	forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
+	forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
 	// post

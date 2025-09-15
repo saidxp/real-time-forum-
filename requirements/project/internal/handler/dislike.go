@@ -7,6 +7,7 @@ import (
 	repo "forum/internal/repository"
 	"net/http"
 	"strconv"
+	"encoding/json"
 )
 
 func DislikeHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,27 +15,32 @@ func DislikeHandler(w http.ResponseWriter, r *http.Request) {
 		forumerror.MethodNotAllowed(w, r)
 		return
 	}
-
 	postId, err := strconv.ParseInt(r.FormValue("post_id"), 10, 0)
 	IsPostExist, err2 := db.IsPostExist(int(postId))
 	if err != nil || !IsPostExist {
 		forumerror.BadRequest(w, r)
 		return
 	}
-
 	if err2 != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-
 	err = db.AddRemovePostDeslike(r.Context().Value(repo.USER_ID_KEY).(int), int(postId))
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
+	post, err := db.GetPostByID(int(postId),r.Context().Value(repo.USER_ID_KEY).(int))
+	fmt.Println(post)
+	response := map[string]interface{}{
+			"success": true,
+			"message": "Like updated successfully",
+			"postId":  int(postId),
+			"data" : post,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 
-	link := fmt.Sprintf("%s#%d", r.Header.Get("Referer"), postId)
-	http.Redirect(w, r, link, http.StatusSeeOther)
 }
 
 func CommentDislikeHandler(w http.ResponseWriter, r *http.Request) {

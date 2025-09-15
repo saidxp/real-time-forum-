@@ -7,6 +7,7 @@ import (
 	repo "forum/internal/repository"
 	"net/http"
 	"strconv"
+	"encoding/json"
 )
 
 func LikeHandler(w http.ResponseWriter, r *http.Request) {
@@ -28,8 +29,16 @@ func LikeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 	}
-	link := fmt.Sprintf("%s#%d", r.Header.Get("Referer"), postId)
-	http.Redirect(w, r, link, http.StatusSeeOther)
+	post, err := db.GetPostByID(int(postId),r.Context().Value(repo.USER_ID_KEY).(int))
+	fmt.Println(post)
+	response := map[string]interface{}{
+			"success": true,
+			"message": "Like updated successfully",
+			"postId":  int(postId),
+			"data" : post,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response) 
 }
 
 func CommentLikeHandler(w http.ResponseWriter, r *http.Request) {
