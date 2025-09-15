@@ -1,10 +1,10 @@
-import { loginbuilding } from "./event.js";
-import { Addeventlistnerandpost} from "./setevrntlisnter.js"
+import { showPage } from "./main.js";
 
 export async function registerBuilding(user) {
 
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
+    formsCSS.id = "cssl9dim"
     formsCSS.rel = 'stylesheet';
     formsCSS.href = '/static/css/forms.css';
     document.head.appendChild(formsCSS);
@@ -30,8 +30,8 @@ export async function registerBuilding(user) {
   }
 
   // === Header ===
-  const header = createEl("header", "header");
-  header.innerHTML = `
+  //const header = createEl("header", "header");
+  mobileHeader.innerHTML = `
     <div class="header__logo">
       <div class="header__logo-link">
         <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
@@ -86,8 +86,9 @@ export async function registerBuilding(user) {
   `;
 
   container.appendChild(form);
+
   // Add Event Listner To Tthe Filter !!
-  Addeventlistnerandpost()
+  //Addeventlistnerandpost()
   // <========||=========>
   // === Footer ===
   const footer = createEl("footer", "footer");
@@ -98,7 +99,7 @@ export async function registerBuilding(user) {
   `;
 
   // === Append to DOM ===
-  if (mobileHeader) mobileHeader.appendChild(header);
+  //if (mobileHeader) mobileHeader.appendChild(header);
   if (mainContent) mainContent.appendChild(container);
   if (footerContainer) footerContainer.appendChild(footer);
 
@@ -134,7 +135,16 @@ export async function registerBuilding(user) {
         //localStorage.setItem("username", result.username);
         const userRes = await fetch("/api/me");
         const user = await userRes.json();
-        await loginbuilding(user)
+        // After Register I Will Show Them Login Page !
+        // i will show them login but the css it's not delete ::
+        // <===>
+        
+        //const formsCSS = document.getElementById("cssl9dim")
+        //if (formsCSS)formsCSS.remove()
+        
+        await showPage("login", user);
+        sessionStorage.setItem("currentPage", "login");
+        console.log("Login clicked!");
         //await (user); // Build home dynamically without refresh
       } else {
         errorMessage.style.display = "block";

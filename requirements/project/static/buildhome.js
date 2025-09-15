@@ -1,9 +1,10 @@
+import { showPage } from "./main.js";
 import { fetchPosts } from "./setevrntlisnter.js";
-import { Logoutfunc } from "./event.js"
-import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 
 // build home it's separate from main !!
 export async function homeBuild(user) {
+
+  // check Authenticatec evey time to be sure the user it's authenticated 
   
   //const rm = document.getElementById
   const mobileHeader = document.querySelector('.mobileHeader');
@@ -19,21 +20,19 @@ export async function homeBuild(user) {
             <section class="main-content__posts">
                 <p>post will be her </p>
             </section>
+            <nav class="pagination" aria-label="Pagination navigation"></nav>
         `;
   }
-
-  // END OF ADDITION
+  // < END OF ADDITION !!!>
   function createEl(tag, className = '', html = '') {
     const el = document.createElement(tag);
     if (className) el.className = className;
     if (html) el.innerHTML = html;
     return el;
   }
-
   // Remove existing header to avoid duplicates
   const existingHeader = document.querySelector('header.header');
   if (existingHeader) existingHeader.remove();
-
   // Build the header dynamically
   const body = document.body;
   const header = createEl("header", "header");
@@ -127,11 +126,18 @@ export async function homeBuild(user) {
   // |< <==-|-==> >|
   header.appendChild(actionsDiv);
   body.insertBefore(header, body.firstChild);
-  // build hero !!
-  buildHero(user)
+  // build hero !! 
   // Get <===> Post <==!!==>
   fetchPosts("")
+  buildHero(user)
+  const foot = document.getElementById("333")
+  foot.innerHTML = `
+    <div class="footer__container">
+      <p class="footer__text">&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>
+    </div>
+  `
 }
+
 function buildHero(user) {
   const hero = document.querySelector(".hero");
   hero.innerHTML = `

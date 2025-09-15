@@ -1,11 +1,11 @@
-import { homeBuild } from "./buildhome.js";
-import { Addeventlistnerandpost } from "./setevrntlisnter.js";
+//import { homeBuild } from "./buildhome.js";
+//import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 import { showPage } from "./main.js";
 
 export async function loginbuilding() {
 
+  // <=( Navigation Clear It Applicate Vanila Is Hill )=> 
 
-  // navigation clear it applicate vanila is hill 
   const existingHomeHeader = document.querySelector('header.header');
   if (existingHomeHeader) existingHomeHeader.remove();
   const m = document.querySelector(".mobileHeader");
@@ -13,9 +13,14 @@ export async function loginbuilding() {
     m.style.display = "";  
     m.innerHTML = ""; 
   }
-
+  /// <=====>
+  const p = document.querySelector(".pagination");
+  p.style.display = "none"
+  // <=====>
+    
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
+    formsCSS.id = "Csslogin"
     formsCSS.rel = 'stylesheet';
     formsCSS.href = '/static/css/forms.css';
     document.head.appendChild(formsCSS);
@@ -84,7 +89,7 @@ export async function loginbuilding() {
     <p>Don't have an account? <a href="#" id = "Register" >Register here</a></p>
   `;
   container.appendChild(form);
-  Addeventlistnerandpost();
+  //Addeventlistnerandpost();
 
   // === Footer ===
   const footer = createEl("footer");
@@ -133,9 +138,13 @@ export async function loginbuilding() {
           mobileHeader.innerHTML = "";
           mobileHeader.style.display = "none";
         }
-        
+        const css = document.getElementById('Csslogin')
+        css.remove()
         const res = await fetch("/api/me");
         const user = await res.json();
+        // It's try to ======>
+         
+        // <=======================> 
         await showPage("home", user);
         sessionStorage.setItem("currentPage", "home");
         //await homeBuild(user)
@@ -168,6 +177,7 @@ export async function Logoutfunc() {
       const user = await res.json();
       await showPage("login", user)
       sessionStorage.setItem("currentPage", "login")
+      
       //await loginbuilding()
     } else {
       console.error("Logout error:", data.error);

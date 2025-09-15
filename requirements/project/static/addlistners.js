@@ -5,9 +5,8 @@ import {POST} from "./post.js"
 import { homeBuild } from "./buildhome.js";
 import { fetchPosts } from "./setevrntlisnter.js";
 import{showPage} from "./main.js"
-// Set up a single global listener for hero + header links
 
-export function setupGlobalListeners(User) {
+export function setupGlobalListeners(User) { 
   document.addEventListener("click", async (event) => {
     let target = event.target;
     console.log("<=(event)======")
@@ -18,15 +17,17 @@ export function setupGlobalListeners(User) {
       event.preventDefault();
       const filter = decodeURIComponent(filterLink.dataset.filter);
       console.log("Filter clicked:", filter);
-
       const res = await fetch("/api/me");
       const user = await res.json();
       // her i will handle the showpage home !!
-      await homeBuild(user);      
+      // it's must be call 
+      //POST(postId, user) 
+      await showPage("home", user);
+      sessionStorage.setItem("currentPage", "home");
+      //await homeBuild(user);      
       fetchPosts(filter);          
       return;                       
     }
-
     const POSTID = event.target.closest("a.readmore");
     // stop for not refrech !! <=> 
     //event.preventDefault();
@@ -40,7 +41,6 @@ export function setupGlobalListeners(User) {
     console.log(user)
     console.log("===========")
     console.log("======her about post isolation====")
-    
     if (POSTID) {
       console.log("Yes, clicked readmore!");
       const postId = POSTID.dataset.id; // 
@@ -75,7 +75,6 @@ export function setupGlobalListeners(User) {
       //registerBuilding();
       console.log("Register clicked!");
     }
-
     // --- <Logout> ---
     else if (id === "Out") {
       // Her I Will Handle The Logout Her !
@@ -85,8 +84,35 @@ export function setupGlobalListeners(User) {
     // --- <Logo> ---
     else if (id === "Logo") {
       console.log("Logo clicked!");
-      await showPage("home", user)
-      sessionStorage.setItem("currentPage", "home")
+      const res = await fetch("/api/me");
+      const user = await res.json();
+      if (!user.authenticated){
+         showPage("login", user)
+         sessionStorage.setItem("currentPage", "login")
+         return
+      }
+      // I Will Get The Css Of Any Css <!-!>
+      const css0 = document.getElementById("cssPOST")
+      const css1 = document.getElementById("css")
+      if (css1) {
+      css1.remove()
+      }else if(css0) {
+        css0.remove()
+      }
+              //\\
+              //\\
+             //  \\
+            //    \\ 
+           //      \\
+          //        \\
+         //          \\  
+        //real-time(-)\\
+       //still not app \\
+      //  ============= \\
+     // i ...........    \\
+    //====================\\
+    await showPage("home", user)
+    sessionStorage.setItem("currentPage", "home")
       // <| Her I Will Check This Her If It's Clicked To Refrech All Page With News! |>
     }
     // I Will Work With ThiS |<!{.}!> |
@@ -102,7 +128,7 @@ export function setupGlobalListeners(User) {
         sessionStorage.setItem("currentPage", "Newpost");
         //NewPost(Object.keys(user.fileds))
       } else {
-        // if ther user is not authenticated it's must be login first !
+        // If Ther User Is Not Authenticated It's Must Be Login First !
         loginbuilding()
       }
     }
@@ -110,8 +136,6 @@ export function setupGlobalListeners(User) {
     else if (id === "Profile") {
       console.log("Profile clicked!");
       // call profile page function
-
     }
   });
-
 }

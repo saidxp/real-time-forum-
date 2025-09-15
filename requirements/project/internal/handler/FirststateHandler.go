@@ -101,6 +101,7 @@ func Pagination(w http.ResponseWriter, r *http.Request, confMap map[string]any) 
 
 // This Get post by filter !!
 func GetPostsByFilter(w http.ResponseWriter, r *http.Request, confMap map[string]any, page int) error {
+
 	query := r.URL.Query()
 	userId := r.Context().Value(repo.USER_ID_KEY).(int)
 

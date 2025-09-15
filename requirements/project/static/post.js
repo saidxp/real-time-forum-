@@ -1,14 +1,25 @@
 // <=============== POST ===================>
 import { showPage } from "./main.js";
+
 export async function POST(id, user, page=1) {
+
+  // <link rel="stylesheet" href="/static/css/post.css"> </link>
+  if (!document.querySelector('link[href*="post.css"]')) {
+    const link = document.createElement('link');
+    link.id = "cssPOST"
+    link.rel = 'stylesheet';
+    link.href = '/static/css/post.css';
+    document.head.appendChild(link);
+  }
 
   const main = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
   const footerEl = document.querySelector('.footer');
+  const container = document.querySelector(".pagination");
+  container.style.display = "none"
 
   console.log("Im At Post And I will See It Howa", user.comments)
 
-  
   const existingHeader = document.querySelector('header.header');
   if (existingHeader) existingHeader.remove();
   if (mobileHeader) {

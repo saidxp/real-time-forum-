@@ -11,7 +11,7 @@ import (
 
 func PostsHandlerApi(w http.ResponseWriter, r *http.Request) {
     confMap := make(map[string]any)
-
+    
     // Determine if user is authenticated
     userId := r.Context().Value(repo.USER_ID_KEY).(int)
     authenticated := userId != -1
@@ -31,5 +31,6 @@ func PostsHandlerApi(w http.ResponseWriter, r *http.Request) {
     // respond with JSON
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(confMap)
+
 }
 

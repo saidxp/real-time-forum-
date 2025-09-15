@@ -22,8 +22,9 @@ func InitDependencies() {
 }
 
 func forumMux() *http.ServeMux {
-	forumux := http.NewServeMux()
 
+	forumux := http.NewServeMux()
+	
 	// root mux ====> i will check it roooooooooooot !!! >>
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
 	/// 
@@ -41,8 +42,6 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/register", middleware.InjectUser(auth.SubmitRegister))
 	forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 	forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
-	
-
 	// profile mux
 	//forumux.HandleFunc("/profile", middleware.AuthMidleware(handler.ProfilHandler))
 	//forumux.HandleFunc("/profile/update/{value}", middleware.AuthMidleware(handler.UpddateProfile))
@@ -69,7 +68,6 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 	hub := handler.NewHub()
 	forumux.HandleFunc("/room", hub.ServeWs)
-
 	return forumux
 }
 

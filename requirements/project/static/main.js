@@ -14,6 +14,9 @@ export async function showPage(page, user, id, curentPage) {
   //check every time the state of user to not lose it in refrech !!
   //const R = await fetch("/api/me");
   //const u = await res.json();
+
+  // I Will Protect The Later The User If Authenticated !!
+  // <===========\`|/'\|`/============>
   currentPage = page;
   console.log("Showpage id ", id)
   if (page === "login") {

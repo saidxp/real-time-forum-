@@ -52,7 +52,7 @@ header {
   margin-block: 20px;
 }
 .mobileHeader{
-  display: flex;
+  /*display: flex;*/
 }
 .header__auth-link,.mobileHeader__auth-link {
   padding: 10px 15px;
