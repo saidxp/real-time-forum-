@@ -5,7 +5,7 @@ export async function NewPost(categories = []) {
   // Load CSS
   if (!document.querySelector('link[href*="forms.css"]')) {
     const link = document.createElement('link');
-    link.id = "css"
+    link.id = "Css"
     link.rel = 'stylesheet';
     link.href = '/static/css/forms.css';
     document.head.appendChild(link);
@@ -17,7 +17,7 @@ export async function NewPost(categories = []) {
   const footerContainer = document.querySelector('.footer');
 
   if (mainContent) mainContent.innerHTML = "";
-  if (mobileHeader) mobileHeader.innerHTML = "";
+  //if (mobileHeader) mobileHeader.innerHTML = "";
   if (pagination) pagination.remove()
   if (footerContainer) footerContainer.innerHTML = "";
 

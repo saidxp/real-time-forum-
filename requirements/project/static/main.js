@@ -14,7 +14,6 @@ export async function showPage(page, user, id, curentPage) {
   //check every time the state of user to not lose it in refrech !!
   //const R = await fetch("/api/me");
   //const u = await res.json();
-
   // I Will Protect The Later The User If Authenticated !!
   // <===========\`|/'\|`/============>
   currentPage = page;
@@ -24,6 +23,8 @@ export async function showPage(page, user, id, curentPage) {
   } else if (page === "register") {
     await registerBuilding(user);
   } else if (page === "home") {
+    const res = await fetch("/api/me");
+    const user = await res.json();
     console.log("howa ola machy hwa howa olahhe tahwa ")
     await homeBuild(user);
   }else if(page  === "Newpost") {

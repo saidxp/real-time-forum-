@@ -5,7 +5,10 @@ import { fetchPosts } from "./setevrntlisnter.js";
 export async function homeBuild(user) {
 
   // check Authenticatec evey time to be sure the user it's authenticated 
-  
+  const ii = document.getElementById("Css")
+  if (ii) {
+    ii.remove()
+  }
   //const rm = document.getElementById
   const mobileHeader = document.querySelector('.mobileHeader');
   if (mobileHeader) {

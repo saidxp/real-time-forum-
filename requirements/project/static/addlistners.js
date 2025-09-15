@@ -126,16 +126,11 @@ export function setupGlobalListeners(User) {
       const user = await res.json();
       // call your create post function
       // I Will CHECK If It's Autenticate Or No !!
-      // IF TRUE AUT ELSE GO TO LOGIN !!
-      if (user.authenticated) {
+      // IF TRUE AUT ELSE GO TO LOGIN !! 
         // < Show Page Her Of The New Post! >!!
         await showPage("Newpost", user);
         sessionStorage.setItem("currentPage", "Newpost");
         //NewPost(Object.keys(user.fileds))
-      } else {
-        // If Ther User Is Not Authenticated It's Must Be Login First !
-        loginbuilding()
-      }
     }
     // --- <Profile> ---
     else if (id === "Profile") {

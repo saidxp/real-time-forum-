@@ -15,9 +15,10 @@ export async function loginbuilding() {
   }
   /// <=====>
   const p = document.querySelector(".pagination");
+  if (p) {
   p.style.display = "none"
+  }
   // <=====>
-    
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
     formsCSS.id = "Csslogin"
@@ -139,13 +140,18 @@ export async function loginbuilding() {
           mobileHeader.style.display = "none";
         }
         const css = document.getElementById('Csslogin')
+        const css1 = document.getElementById('"css"')
+        if (css) {
         css.remove()
-        const res = await fetch("/api/me");
-        const user = await res.json();
+        }
+        if (css1) {
+          css1.remove()
+        }
+        //const res = await fetch("/api/me");
+        //const user = await res.json();
         // It's try to ======>
-         
         // <=======================> 
-        await showPage("home", user);
+        await showPage("home");
         sessionStorage.setItem("currentPage", "home");
         //await homeBuild(user)
       } else {
