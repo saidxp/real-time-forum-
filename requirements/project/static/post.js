@@ -47,7 +47,7 @@ export async function POST(id, user, page=1) {
       </div>`;
   }
 
-  // === < Show loading in main content > ===
+  // === < Show Loading In Main Content > ===
   if (main) main.innerHTML = `<p style="text-align:center; margin:2rem;">Loading post...</p>`;
 
   try {
@@ -126,7 +126,7 @@ export function Create({ post, comments = [],user, footerEl, Pagination=null}) {
 
 const commentFormHTML = `
     <div class="containercomment">
-      <form id="form_comment" action="/comment" method="POST">
+      <form id="form_comment" action="#" method="POST">
         <input type="hidden" name="post_id" value="${post.Id}">
         <textarea id="comment" name="comment" placeholder="comment..." minlength="1" maxlength="1000" required></textarea>
         <button type="submit"><img src="/static/svg/send.svg" alt="comment"></button>
@@ -167,7 +167,7 @@ const commentFormHTML = `
           </div>
         </div>
       `).join('')
-    : `<div class="container"><p style="text-align:center;">No comments yet.</p></div>`;
+    : `<div id="Com" class="container"><p style="text-align:center;">No comments yet.</p></div>`;
   let paginationHTML = '';
   if (Pagination) {
     paginationHTML = `
@@ -240,16 +240,17 @@ const commentFormHTML = `
   if (formComment) {
     formComment.addEventListener("submit", async (e) => {
       e.preventDefault();
-      console.log("howwa hada libghina hna o daba ")
+      console.log("howa hada libghina hna o daba ")
       console.log(Pagination.curent)
       let curent = Pagination.curent
-      let idPost = post.Id
+      let post_id = post.Id
       console.log("how hada li bghina o mkhlina li hnina omandiro so9 rosnna waaayaayii ")
       const formData = new FormData(formComment);
       /// I Add To Object The Current Page !
       formData.append("currentPage" ,curent)
-      formData.append("Post_id", idPost)
+      //formData.append("Post_id", idPost)
       // <==|<--|-->|==> 
+      console.log(formData)
       try {
         const res = await fetch("/comment", { method: "POST", body: formData });
         if (!res.ok) throw new Error("Failed to submit comment");
@@ -268,11 +269,15 @@ const commentFormHTML = `
           const node = createCommentNode(newComment);
           commentsList.prepend(node);
         }
-        const maxOnPage = 10;  // <<========>> \\
+        const maxOnPage = 10;  // <<========>> \\Com
         const visible = commentsList.querySelectorAll(".commentcontainer");
         if (visible.length > maxOnPage) {
           const last = visible[visible.length - 1];
           last.closest(".container")?.remove();
+        }
+        const NOcoment = document.getElementById('Com')
+        if (NOcoment) {
+          NOcoment.remove()
         }
         //addCommentToPage(newComment);
         console.log("===== Her the response from the server ")
@@ -286,7 +291,6 @@ const commentFormHTML = `
   }
 }
 
-
 function escapeHtml(s) {
   if (!s) return "";
   return String(s)
@@ -298,7 +302,6 @@ function escapeHtml(s) {
 }
 
 function createCommentNode(c) {
-
 
   const id = c.comment_id ?? c.CommentId ?? c.commentId ?? "";
   const initial = c.initial ?? c.Initial ?? "";

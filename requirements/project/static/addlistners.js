@@ -25,7 +25,7 @@ export function setupGlobalListeners(User) {
       await showPage("home", user);
       sessionStorage.setItem("currentPage", "home");
       //await homeBuild(user);      
-      fetchPosts(filter);          
+      fetchPosts(filter, 1);          
       return;                       
     }
     const POSTID = event.target.closest("a.readmore");
@@ -33,16 +33,14 @@ export function setupGlobalListeners(User) {
     //event.preventDefault();
     // her i will fetch the state of user if he is  Authenicate or NO ...!! 
     // <=====================>
-    const res = await fetch("/api/me");
-    const user = await res.json();
+    
     // <==================>
     // I Was Using When I Want To Go trought nodes to handle nested element but i get problem ! 
-    console.log("<=(state)=====")
-    console.log(user)
-    console.log("===========")
-    console.log("======her about post isolation====")
+    
     if (POSTID) {
       console.log("Yes, clicked readmore!");
+      const res = await fetch("/api/me");
+      const user = await res.json();
       const postId = POSTID.dataset.id; // 
       console.log("Post ID:", postId);
       console.log(typeof(postId))
@@ -56,19 +54,24 @@ export function setupGlobalListeners(User) {
     //while (target && tmodulearget.tagName !== "A") {
       //target = target.parentElement;
     //}
-    // <==========> 
+    // <==========>
+
     if (!target) return;
     const id = target.id;
     console.log("the id her", id)
     // SWITCH CASE WILL BE GOOD LATER !
     // --- <Login> ---
     if (id === "Login") {
+      const res = await fetch("/api/me");
+      const user = await res.json();
       await showPage("login", user);
       sessionStorage.setItem("currentPage", "login");
       console.log("Login clicked!");
     }
     // --- <Register> ---
     else if (id === "Register") {
+      const res = await fetch("/api/me");
+      const user = await res.json();
       event.preventDefault();
       await showPage("register", user);
       sessionStorage.setItem("currentPage", "register");
@@ -119,6 +122,8 @@ export function setupGlobalListeners(User) {
     // <--- <Create Post> ---> !!
     else if (id === "Newpost") {
       console.log("Create Post clicked!");
+      const res = await fetch("/api/me");
+      const user = await res.json();
       // call your create post function
       // I Will CHECK If It's Autenticate Or No !!
       // IF TRUE AUT ELSE GO TO LOGIN !!
