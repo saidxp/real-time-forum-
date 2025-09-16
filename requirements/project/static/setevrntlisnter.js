@@ -22,11 +22,15 @@ export async function fetchPosts(filter = "", page=1) {
 
   try {
     //const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}`);
+    console.log("Her Im At The Fetch ....")
+    console.log(filter)
+    console.log("==================")
     const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}&page=${page}`);
     const data = await res.json();
     console.log("Fetched data:", data);
-    // Still Need To Fix It's No posts When I Want Her Just some handlling
-    // Normalize posts array from several possible shapes
+
+    // Still Need To Fix It's No Posts When I Want Her Just Some Handlling
+    // Normalize Posts Array From Several Possible Shapes <<==>>
     const pagination = {
       "CurrentPage" : data.CurrentPage,
       "HasNext" :       data.HasNext,
@@ -34,15 +38,12 @@ export async function fetchPosts(filter = "", page=1) {
       "NextPage" : data.CurrentPage + 1,
       "PrevPage" : data.CurrentPage -1 ,
     }
-
-    let postsList = [];
-
-    if (Array.isArray(data.Posts)) postsList = data.Posts;
-    else if (data.Posts && Array.isArray(data.Posts.Posts)) postsList = data.Posts.Posts;
-    else if (Array.isArray(data.posts)) postsList = data.posts;
-    else if (data.Posts && Array.isArray(data.Posts.posts)) postsList = data.Posts.posts;
-    else postsList = []; // fallback
-
+    let postsList = normalizePosts(data) 
+    console.log("========At post list========")
+    console.log(postsList)
+    console.log("this the length")
+    console.log(postsList.length)
+    console.log("==================")
     const postsContainer = document.querySelector(".main-content__posts");
     if (!postsContainer) {
       console.warn("No .main-content__posts container found.");
@@ -151,7 +152,17 @@ export async function fetchPosts(filter = "", page=1) {
     console.error("Failed to fetch posts:", err);
   }
 }
- 
+function normalizePosts(data) {
+  // her i will protect them from null posts And Not Condition IT's applicate !!
+  if (!data) return [];
+
+  if (Array.isArray(data.Posts)) return data.Posts;
+  if (data.Posts && Array.isArray(data.Posts.Posts)) return data.Posts.Posts;
+  if (Array.isArray(data.posts)) return data.posts;
+  if (data.Posts && Array.isArray(data.Posts.posts)) return data.Posts.posts;
+
+  return [];   
+}
 
 function renderPagination(pagination) {
 

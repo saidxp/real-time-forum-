@@ -131,7 +131,8 @@ export async function homeBuild(user) {
   body.insertBefore(header, body.firstChild);
   // build hero !! 
   // Get <===> Post <==!!==>
-  fetchPosts("")
+  await fetchPosts("")
+  // I THIK I DO IT HHHHHHHHH I SOLVE THE PROBLEM !! OF THE ASYNC JS IT'S CRAZY IT'S NOT POINT TO THE PORBBLEM IN THE FIRST !!
   buildHero(user)
   const foot = document.getElementById("333")
   foot.innerHTML = `

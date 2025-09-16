@@ -22,10 +22,10 @@ export function setupGlobalListeners(User) {
       // her i will handle the showpage home !!
       // it's must be call 
       //POST(postId, user) 
-      await showPage("home", user);
-      sessionStorage.setItem("currentPage", "home");
+      //await showPage("home", user);
+      //sessionStorage.setItem("currentPage", "home");
       //await homeBuild(user);      
-      fetchPosts(filter, 1);          
+      await fetchPosts(filter, 1);          
       return;                       
     }
     const POSTID = event.target.closest("a.readmore");
