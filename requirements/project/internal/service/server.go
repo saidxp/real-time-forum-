@@ -41,6 +41,11 @@ func forumMux() *http.ServeMux {
 
 	// API endpoint for getting online users for chat
 	forumux.HandleFunc("/api/online-users", middleware.InjectUser(handler.OnlineUsersHandler))
+	forumux.HandleFunc("/api/chat-messages", handler.GetChatMessagesHandler)
+forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
+forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)
+forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
+
 
 	// authontication mux
 	forumux.HandleFunc("/login", auth.SubmitLogin)
@@ -63,8 +68,7 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 
 	// WebSocket endpoint for private chat
-	forumux.HandleFunc("/room", hub.ServeWs)
-
+forumux.HandleFunc("/room", hub.ServeWs)
 	return forumux
 }
 func StartServer() {
