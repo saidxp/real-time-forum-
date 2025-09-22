@@ -68,8 +68,8 @@ forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
 	// static mux
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 
-	// WebSocket endpoint for private chat
-forumux.HandleFunc("/room", hub.ServeWs)
+	// WebSocket endpoint for private chat (protected)
+forumux.HandleFunc("/room", middleware.AuthMidleware(hub.ServeWs))
 	return forumux
 }
 func StartServer() {

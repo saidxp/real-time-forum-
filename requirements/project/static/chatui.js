@@ -85,12 +85,12 @@ function setupEventListeners() {
   // Auto-scroll detection for loading more messages
   const messagesDiv = document.getElementById("messages");
   if (messagesDiv) {
-    messagesDiv.addEventListener("scroll", () => {
-      const nearBottom = messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 5;
-      if (nearBottom && hasMoreMessages && !isLoadingMessages) {
+    const debouncedTopLoader = debounce(() => {
+      if (messagesDiv.scrollTop === 0 && hasMoreMessages && !isLoadingMessages) {
         loadMoreMessages();
       }
-    });
+    }, 250);
+    messagesDiv.addEventListener("scroll", debouncedTopLoader);
   }
 }
 
@@ -170,16 +170,20 @@ async function loadChatHistory() {
       }
       
       const scrollHeightBefore = messagesDiv.scrollHeight;
-      
-      // Display newest first
-      const newestFirst = (data.messages || []).slice().reverse();
-      newestFirst.forEach(msg => {
-        addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at));
-      });
 
-      // First load - stay at the top (newest visible)
       if (messagesLoaded === 0) {
-        messagesDiv.scrollTop = 0;
+        // Initial load: append oldest -> newest, then scroll to bottom
+        (data.messages || []).forEach(msg => {
+          addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at), false);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      } else {
+        // Load older: prepend at top and maintain scroll position
+        (data.messages || []).forEach(msg => {
+          addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at), true);
+        });
+        const scrollHeightAfter = messagesDiv.scrollHeight;
+        messagesDiv.scrollTop = scrollHeightAfter - scrollHeightBefore;
       }
       
       messagesLoaded += data.messages.length;
@@ -297,6 +301,10 @@ function renderUserList(allUsers, onlineUsers) {
   const all = (allUsers || []).filter(u => !(currentUser && u === currentUser.Username));
   const connected = all.filter(u => onlineSet.has(u));
   const disconnected = all.filter(u => !onlineSet.has(u));
+
+  // Alphabetical sort when no recent chats ordering is available
+  connected.sort((a, b) => a.localeCompare(b));
+  disconnected.sort((a, b) => a.localeCompare(b));
 
   // Connected section
   const connectedHeader = document.createElement('li');
@@ -429,7 +437,7 @@ function updateOnlineUsers(users) {
   userList.appendChild(placeholder);
 }
 
-async function addChatMessageToHistory(username, message, timestamp) {
+async function addChatMessageToHistory(username, message, timestamp, prepend = false) {
   try {
     // Use the global currentUser instead of fetching again
     const currentUsername = currentUser ? currentUser.Username : "Anonymous";
@@ -445,16 +453,24 @@ async function addChatMessageToHistory(username, message, timestamp) {
       <div class="timestamp">${timestamp.toLocaleString()}</div>
     `;
     
-    // Append messages so the first appended (newest) stays on top overall
     const messagesDiv = document.getElementById("messages");
     if (!messagesDiv) return;
 
-    messagesDiv.appendChild(msgContainer);
+    if (prepend) {
+      const firstMessage = messagesDiv.querySelector(".message-container");
+      if (firstMessage) {
+        messagesDiv.insertBefore(msgContainer, firstMessage);
+      } else {
+        messagesDiv.appendChild(msgContainer);
+      }
+    } else {
+      messagesDiv.appendChild(msgContainer);
+    }
 
-    // Ensure load more button is at the bottom
+    // Keep the load-more button at the top (for scroll-up model) if it exists
     const loadMoreBtn = document.getElementById("loadMoreBtn");
     if (loadMoreBtn) {
-      messagesDiv.appendChild(loadMoreBtn);
+      messagesDiv.insertBefore(loadMoreBtn, messagesDiv.firstChild);
     }
   } catch (err) {
     console.error("Error adding message to history:", err);
@@ -503,6 +519,15 @@ function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Debounce utility to avoid spamming the scroll event
+function debounce(fn, wait) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait);
+  };
 }
 
 function sendMessage() {

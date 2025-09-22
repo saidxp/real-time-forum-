@@ -119,3 +119,15 @@ ON chat_messages (created_at);
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_unread 
 ON chat_messages (receiver_id, is_read);
+
+-- User Profiles Table for additional registration fields
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id INTEGER PRIMARY KEY,
+    age INTEGER NOT NULL,
+    gender TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

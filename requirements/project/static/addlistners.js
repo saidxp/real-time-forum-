@@ -21,6 +21,11 @@ export function setupGlobalListeners(User) {
 
       const res = await fetch("/api/me");
       const user = await res.json();
+      if (!user.authenticated) {
+        await showPage("login", user);
+        sessionStorage.setItem("currentPage", "login");
+        return;
+      }
       await homeBuild(user);      
       fetchPosts(filter);          
       return;                       
@@ -31,12 +36,17 @@ export function setupGlobalListeners(User) {
     const user = await res.json();
     
     if (POSTID) {
+      if (!user.authenticated) {
+        await showPage("login", user);
+        sessionStorage.setItem("currentPage", "login");
+        return;
+      }
       console.log("Yes, clicked readmore!");
       const postId = POSTID.dataset.id;
       console.log("Post ID:", postId);
       await showPage("Post", user, postId);
       sessionStorage.setItem("currentPage", "Post");
-      console.log("Login clicked!");
+      console.log("Post open clicked!");
     }
     
     if (!target) return;
@@ -60,9 +70,13 @@ export function setupGlobalListeners(User) {
       console.log("Logout clicked!");
     }
     else if (id === "Logo" || id === "logo") {
-      // Go back to home
-      await showPage("home", user);
-      sessionStorage.setItem("currentPage", "home");
+      if (user.authenticated) {
+        await showPage("home", user);
+        sessionStorage.setItem("currentPage", "home");
+      } else {
+        await showPage("login", user);
+        sessionStorage.setItem("currentPage", "login");
+      }
       console.log("Logo clicked!");
     }
     else if (id === "Newpost") {
