@@ -4,6 +4,7 @@ import { homeBuild } from "./buildhome.js";
 import { registerBuilding } from "./register.js";
 import { POST } from "./post.js";
 import { loadChatUI } from "./chatui.js";
+import { NewPost } from "./newpost.js";
 
 let currentPage = "login";
 
@@ -18,7 +19,7 @@ export async function showPage(page, user, id, curentPage, targetUser = null) {
   } else if (page === "home") {
     await homeBuild(user);
   } else if (page === "Newpost") {
-    NewPost(Object.keys(user.fileds))
+    await NewPost(Object.keys(user.fileds));
   } else if (page === "Post") {
     if (id !== undefined) {
       sessionStorage.setItem("currentPostId", id);

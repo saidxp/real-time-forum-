@@ -41,6 +41,7 @@ func forumMux() *http.ServeMux {
 
 	// API endpoint for getting online users for chat
 	forumux.HandleFunc("/api/online-users", middleware.InjectUser(handler.OnlineUsersHandler))
+	forumux.HandleFunc("/api/all-users", middleware.InjectUser(handler.AllUsersHandler))
 	forumux.HandleFunc("/api/chat-messages", handler.GetChatMessagesHandler)
 forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
 forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)

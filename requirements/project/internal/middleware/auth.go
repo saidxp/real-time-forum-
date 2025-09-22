@@ -13,9 +13,9 @@ func AuthMidleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sessionCookie, err := r.Cookie("session_token")
 
-		// At mdileware i will check if he is login
+		// Check login; if missing or empty, redirect to login page (root renders login UI)
 		if err != nil || sessionCookie.Value == "" {
-			//auth.ServLogin(w, r)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
@@ -27,7 +27,7 @@ func AuthMidleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !exist {
-			//auth.ServLogin(w, r)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 

@@ -2,8 +2,9 @@ async function loadCurrentUser() {
   try {
     const response = await fetch("/api/me");
     const data = await response.json();
+    const username = data.Username || data.username || "Anonymous";
     const el = document.getElementById("currentUser");
-    if (el) el.textContent = `Logged in as: ${data.username}`;
+    if (el) el.textContent = `Logged in as: ${username}`;
   } catch (err) {
     console.error("Error loading current user:", err);
   }
@@ -18,83 +19,10 @@ let messagesLoaded = 0;
 let isLoadingMessages = false;
 let hasMoreMessages = true;
 let currentSocket = null;
+let currentUser = null;
+let intentionalSocketClose = false;
 
-export async function loadChatUI(targetUser = null) {
-  // Clean up existing content
-  const existingElements = [
-    ".main-content", 
-    ".pagination", 
-    ".footer",
-    ".chat-container"
-  ];
-  existingElements.forEach(selector => {
-    const element = document.querySelector(selector);
-    if (element) element.remove();
-  });
-
-  // Chat container + sidebar
-  const chatContainer = document.createElement("div");
-  chatContainer.className = "chat-container";
-
-  const chatMain = document.createElement("div");
-  chatMain.className = "chat-main";
-  chatMain.innerHTML = `
-    <div class="chat-header">
-      <h2 id="chatTitle">Real-Time Forum Chat</h2>
-      <button id="backToForum" class="back-btn">← Back to Forum</button>
-    </div>
-    <div id="messages" class="chat-messages">
-      <div class="message system">Welcome to the chat! 🎉</div>
-      <div id="loadMoreBtn" class="load-more-btn" style="display: none;">Load More Messages</div>
-    </div>
-    <div class="chat-input" ${targetUser ? '' : 'style="display: none;"'}>
-      <input id="msg" type="text" placeholder="Type a message..." />
-      <button id="sendBtn">Send</button>
-    </div>
-  `;
-
-  const chatSidebar = document.createElement("div");
-  chatSidebar.className = "chat-sidebar";
-  chatSidebar.innerHTML = `
-    <h3>Users</h3>
-    <ul class="user-list" id="userList"></ul>
-  `;
-
-  chatContainer.append(chatMain, chatSidebar);
-  document.body.append(chatContainer);
-
-  addChatStyles();
-
-  // ======= Fetch current user =======
-  let currentUser = { Username: "Anonymous" };
-  try {
-    const res = await fetch("/api/me");
-    const data = await res.json();
-    if (data.authenticated) {
-      currentUser = { Username: data.Username, Initial: data.Initial, ID: data.ID };
-    }
-  } catch (err) {
-    console.error("Error fetching user state:", err);
-  }
-
-  // Set up event listeners first
-  setupEventListeners(currentUser);
-
-  // If targetUser is specified, set up private chat
-  if (targetUser) {
-    await setupPrivateChat(targetUser, currentUser);
-  } else {
-    // Load online users for selection
-    await loadOnlineUsers();
-  }
-
-  if (targetUser) {
-    const msgInput = document.getElementById("msg");
-    if (msgInput) msgInput.focus();
-  }
-}
-
-function setupEventListeners(currentUser) {
+function setupEventListeners() {
   // Send button listener
   const sendBtn = document.getElementById("sendBtn");
   if (sendBtn) {
@@ -104,8 +32,11 @@ function setupEventListeners(currentUser) {
   // Enter key listener
   const msgInput = document.getElementById("msg");
   if (msgInput) {
-    msgInput.addEventListener("keypress", (event) => {
-      if (event.key === "Enter") sendMessage();
+    msgInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
     });
   }
 
@@ -113,20 +44,36 @@ function setupEventListeners(currentUser) {
   const backBtn = document.getElementById("backToForum");
   if (backBtn) {
     backBtn.addEventListener("click", async () => {
-      if (currentSocket) {
-        currentSocket.close();
-        currentSocket = null;
-      }
-      try {
-        const res = await fetch("/api/me");
-        const user = await res.json();
-        const { showPage } = await import("./main.js");
-        await showPage("home", user);
-        sessionStorage.setItem("currentPage", "home");
-      } catch (err) {
-        console.error("Error navigating back to forum:", err);
-      }
-    });
+  if (currentSocket) {
+    intentionalSocketClose = true;
+    currentSocket.close();
+    currentSocket = null;
+  }
+  currentChatUser = null;
+  
+  // Remove chat container and styles
+  const chatContainer = document.querySelector('.chat-container');
+  if (chatContainer) chatContainer.remove();
+  const chatStyles = document.querySelector('style[data-chat-styles]');
+  if (chatStyles) chatStyles.remove();
+  
+  // Restore hidden forum elements
+  [".main-content", ".pagination", ".footer"].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) el.style.display = "";
+  });
+  
+  // Restart online users refresh when going back to user selection
+  startOnlineUsersRefresh();
+  
+  try {
+    const { showPage } = await import("./main.js");
+    await showPage("home", currentUser);
+    sessionStorage.setItem("currentPage", "home");
+  } catch (err) {
+    console.error("Error navigating back to forum:", err);
+  }
+});
   }
 
   // Load more messages button
@@ -139,14 +86,18 @@ function setupEventListeners(currentUser) {
   const messagesDiv = document.getElementById("messages");
   if (messagesDiv) {
     messagesDiv.addEventListener("scroll", () => {
-      if (messagesDiv.scrollTop === 0 && hasMoreMessages && !isLoadingMessages) {
+      const nearBottom = messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 5;
+      if (nearBottom && hasMoreMessages && !isLoadingMessages) {
         loadMoreMessages();
       }
     });
   }
 }
 
-async function setupPrivateChat(targetUser, currentUser) {
+async function setupPrivateChat(targetUser) {
+  // Stop periodic refresh when entering private chat
+  stopOnlineUsersRefresh();
+  
   currentChatUser = targetUser;
   const chatTitle = document.getElementById("chatTitle");
   if (chatTitle) {
@@ -186,7 +137,7 @@ async function setupPrivateChat(targetUser, currentUser) {
   }
 
   // Set up WebSocket connection
-  setupWebSocket(currentUser, targetUser);
+  setupWebSocket(targetUser);
   
   // Show chat input
   const chatInput = document.querySelector(".chat-input");
@@ -220,22 +171,19 @@ async function loadChatHistory() {
       
       const scrollHeightBefore = messagesDiv.scrollHeight;
       
-      // Add messages at the top (they come in chronological order)
-      data.messages.forEach(msg => {
+      // Display newest first
+      const newestFirst = (data.messages || []).slice().reverse();
+      newestFirst.forEach(msg => {
         addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at));
       });
-      
-      // Maintain scroll position when loading older messages
-      if (messagesLoaded > 0) {
-        const scrollHeightAfter = messagesDiv.scrollHeight;
-        messagesDiv.scrollTop = scrollHeightAfter - scrollHeightBefore;
-      } else {
-        // First load - scroll to bottom
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+      // First load - stay at the top (newest visible)
+      if (messagesLoaded === 0) {
+        messagesDiv.scrollTop = 0;
       }
       
       messagesLoaded += data.messages.length;
-      hasMoreMessages = data.hasMore;
+      hasMoreMessages = Boolean(data.hasMore);
       
       // Show/hide load more button
       const loadMoreBtn = document.getElementById("loadMoreBtn");
@@ -270,22 +218,41 @@ async function loadMoreMessages() {
   await loadChatHistory();
 }
 
-function setupWebSocket(currentUser, targetUser) {
+function setupWebSocket(targetUser) {
   if (currentSocket) {
+    intentionalSocketClose = true;
     currentSocket.close();
   }
   
-  const socketUrl = `ws://${location.host}/room?user1=${encodeURIComponent(currentUser.Username)}&user2=${encodeURIComponent(targetUser)}&username=${encodeURIComponent(currentUser.Username)}`;
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  let socketUrl;
+  if (targetUser) {
+    socketUrl = `${scheme}://${location.host}/room?user1=${encodeURIComponent(currentUser.Username)}&user2=${encodeURIComponent(targetUser)}&username=${encodeURIComponent(currentUser.Username)}`;
+  } else {
+    socketUrl = `${scheme}://${location.host}/room?room=global&username=${encodeURIComponent(currentUser.Username)}`;
+  }
   currentSocket = new WebSocket(socketUrl);
 
   currentSocket.onopen = () => {
     console.log("WebSocket connected");
     addSystemMessage("Connected to server");
+    
+    // Pause fallback refresh while socket is open; do one initial fetch
+    if (!targetUser) {
+      stopOnlineUsersRefresh();
+      loadOnlineUsers();
+    }
   };
   
   currentSocket.onclose = () => {
     console.log("WebSocket disconnected");
-    addSystemMessage("Disconnected from server");
+    if (!intentionalSocketClose) {
+      addSystemMessage("Disconnected from server");
+    }
+    intentionalSocketClose = false;
+    if (!targetUser) {
+      startOnlineUsersRefresh();
+    }
   };
   
   currentSocket.onerror = (error) => {
@@ -296,22 +263,176 @@ function setupWebSocket(currentUser, targetUser) {
   currentSocket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
+      console.log("WebSocket message received:", data);
+      
       if (data.type === "users") {
-        console.log("Users update:", data.list);
+        // In lobby, refresh from API to reflect globally online users; ignore in private chat
+        if (!targetUser) {
+          loadOnlineUsers();
+        }
       } else if (data.type === "message") {
         addChatMessage(data.name, data.message);
+      } else if (data.type === "user_joined" || data.type === "user_left") {
+        // Refresh online users when someone joins/leaves
+        if (!targetUser) {
+          loadOnlineUsers();
+        }
       }
     } catch (err) {
       console.error("Invalid JSON received:", event.data);
     }
   };
 }
+function renderUserList(allUsers, onlineUsers) {
+  const userList = document.getElementById("userList");
+  if (!userList) {
+    console.error("User list element not found");
+    return;
+  }
+
+  // Reset list; recent chats will be appended later by loadRecentChats()
+  userList.innerHTML = '';
+
+  const onlineSet = new Set(onlineUsers || []);
+  const all = (allUsers || []).filter(u => !(currentUser && u === currentUser.Username));
+  const connected = all.filter(u => onlineSet.has(u));
+  const disconnected = all.filter(u => !onlineSet.has(u));
+
+  // Connected section
+  const connectedHeader = document.createElement('li');
+  connectedHeader.className = 'chat-header';
+  connectedHeader.innerHTML = '<strong>Connected:</strong>';
+  userList.appendChild(connectedHeader);
+
+  if (connected.length > 0) {
+    connected.forEach((username) => {
+      const li = document.createElement("li");
+      li.className = "online-user";
+      li.setAttribute("data-username", username);
+      const dot = document.createElement('span');
+      dot.className = 'status-dot online';
+      li.appendChild(dot);
+      const nameNode = document.createTextNode(username);
+      li.appendChild(nameNode);
+      li.addEventListener("click", async () => {
+        try {
+          if (currentSocket) {
+            intentionalSocketClose = true;
+            currentSocket.close();
+            currentSocket = null;
+          }
+          await setupPrivateChat(username);
+        } catch (err) {
+          console.error("Error setting up private chat:", err);
+          addSystemMessage("Failed to start chat with " + username);
+        }
+      });
+      userList.appendChild(li);
+    });
+  } else {
+    const empty = document.createElement('li');
+    empty.innerHTML = '<em>No users online</em>';
+    userList.appendChild(empty);
+  }
+
+  // Disconnected section
+  const disconnectedHeader = document.createElement('li');
+  disconnectedHeader.className = 'chat-header';
+  disconnectedHeader.innerHTML = '<strong>Disconnected:</strong>';
+  userList.appendChild(disconnectedHeader);
+
+  if (disconnected.length > 0) {
+    disconnected.forEach((username) => {
+      const li = document.createElement("li");
+      li.className = "online-user";
+      li.setAttribute("data-username", username);
+      const dot = document.createElement('span');
+      dot.className = 'status-dot offline';
+      li.appendChild(dot);
+      const nameNode = document.createTextNode(username);
+      li.appendChild(nameNode);
+      li.addEventListener("click", async () => {
+        try {
+          if (currentSocket) {
+            intentionalSocketClose = true;
+            currentSocket.close();
+            currentSocket = null;
+          }
+          await setupPrivateChat(username);
+        } catch (err) {
+          console.error("Error setting up private chat:", err);
+          addSystemMessage("Failed to start chat with " + username);
+        }
+      });
+      userList.appendChild(li);
+    });
+  } else {
+    const empty = document.createElement('li');
+    empty.innerHTML = '<em>No users offline</em>';
+    userList.appendChild(empty);
+  }
+}
+
+function updateOnlineUsers(users) {
+  const userList = document.getElementById("userList");
+  if (!userList) {
+    console.error("User list element not found");
+    return;
+  }
+
+  userList.innerHTML = '';
+
+  // Connected section only (fallback when /api/all-users is not available)
+  const connectedHeader = document.createElement('li');
+  connectedHeader.className = 'chat-header';
+  connectedHeader.innerHTML = '<strong>Connected:</strong>';
+  userList.appendChild(connectedHeader);
+
+  if (users && users.length > 0) {
+    users.forEach((username) => {
+      if (currentUser && username === currentUser.Username) return;
+      const li = document.createElement("li");
+      li.className = "online-user";
+      li.setAttribute("data-username", username);
+      const dot = document.createElement('span');
+      dot.className = 'status-dot online';
+      li.appendChild(dot);
+      const nameNode = document.createTextNode(escapeHtml(username));
+      li.appendChild(nameNode);
+      li.addEventListener("click", async () => {
+        try {
+          if (currentSocket) {
+            intentionalSocketClose = true;
+            currentSocket.close();
+            currentSocket = null;
+          }
+          await setupPrivateChat(username);
+        } catch (err) {
+          console.error("Error setting up private chat:", err);
+          addSystemMessage("Failed to start chat with " + username);
+        }
+      });
+      userList.appendChild(li);
+    });
+  } else {
+    const empty = document.createElement('li');
+    empty.innerHTML = '<em>No users online</em>';
+    userList.appendChild(empty);
+  }
+
+  const disconnectedHeader = document.createElement('li');
+  disconnectedHeader.className = 'chat-header';
+  disconnectedHeader.innerHTML = '<strong>Disconnected:</strong>';
+  userList.appendChild(disconnectedHeader);
+  const placeholder = document.createElement('li');
+  placeholder.innerHTML = '<em>Disconnected users require the /api/all-users endpoint</em>';
+  userList.appendChild(placeholder);
+}
 
 async function addChatMessageToHistory(username, message, timestamp) {
   try {
-    const res = await fetch("/api/me");
-    const data = await res.json();
-    const currentUsername = data.Username;
+    // Use the global currentUser instead of fetching again
+    const currentUsername = currentUser ? currentUser.Username : "Anonymous";
     
     const msgContainer = document.createElement("div");
     msgContainer.classList.add("message-container");
@@ -324,20 +445,16 @@ async function addChatMessageToHistory(username, message, timestamp) {
       <div class="timestamp">${timestamp.toLocaleString()}</div>
     `;
     
-    // Insert after load more button or at the beginning
+    // Append messages so the first appended (newest) stays on top overall
     const messagesDiv = document.getElementById("messages");
     if (!messagesDiv) return;
-    
+
+    messagesDiv.appendChild(msgContainer);
+
+    // Ensure load more button is at the bottom
     const loadMoreBtn = document.getElementById("loadMoreBtn");
-    if (loadMoreBtn && loadMoreBtn.style.display !== "none") {
-      messagesDiv.insertBefore(msgContainer, loadMoreBtn.nextSibling);
-    } else {
-      const firstMessage = messagesDiv.querySelector(".message-container");
-      if (firstMessage) {
-        messagesDiv.insertBefore(msgContainer, firstMessage);
-      } else {
-        messagesDiv.appendChild(msgContainer);
-      }
+    if (loadMoreBtn) {
+      messagesDiv.appendChild(loadMoreBtn);
     }
   } catch (err) {
     console.error("Error adding message to history:", err);
@@ -346,9 +463,8 @@ async function addChatMessageToHistory(username, message, timestamp) {
 
 async function addChatMessage(username, message) {
   try {
-    const res = await fetch("/api/me");
-    const data = await res.json();
-    const currentUsername = data.Username;
+    // Use the global currentUser instead of fetching again
+    const currentUsername = currentUser ? currentUser.Username : "Anonymous";
     
     const msgContainer = document.createElement("div");
     msgContainer.classList.add("message-container");
@@ -398,71 +514,52 @@ function sendMessage() {
   
   const message = input.value.trim();
   if (message !== "" && currentSocket && currentSocket.readyState === WebSocket.OPEN) {
-    fetch("/api/me")
-      .then(r => r.json())
-      .then(data => {
-        const payload = {
-          type: "message",
-          name: data.Username,
-          message: message
-        };
-        console.log("Sending message:", payload);
-        currentSocket.send(JSON.stringify(payload));
-        input.value = "";
-      })
-      .catch(err => {
-        console.error("Error sending message:", err);
-        addSystemMessage("Failed to send message");
-      });
+    // Use the global currentUser instead of fetching again
+    if (currentUser && currentUser.Username) {
+      const payload = {
+        type: "message",
+        name: currentUser.Username,
+        message: message
+      };
+      console.log("Sending message:", payload);
+      currentSocket.send(JSON.stringify(payload));
+      input.value = "";
+    } else {
+      console.error("Current user not available");
+      addSystemMessage("Failed to send message - user not available");
+    }
   } else {
     if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) {
       addSystemMessage("Connection not ready. Please wait and try again.");
     }
   }
 }
-
 async function loadOnlineUsers() {
   try {
-    const response = await fetch("/api/online-users");
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    const onlineRes = await fetch("/api/online-users");
+    if (!onlineRes.ok) {
+      throw new Error(`HTTP ${onlineRes.status}`);
     }
-    const data = await response.json();
-    const userList = document.getElementById("userList");
-    if (!userList) {
-      console.error("User list element not found");
-      return;
-    }
-    
-    userList.innerHTML = "";
+    const onlineData = await onlineRes.json();
+    const online = onlineData.users || [];
 
-    if (data.users && data.users.length > 0) {
-      data.users.forEach((username) => {
-        const li = document.createElement("li");
-        li.className = "online-user";
-        li.setAttribute("data-username", username);
-        li.innerHTML = `<span class="status-dot"></span>${escapeHtml(username)}`;
-        li.addEventListener("click", async () => {
-          try {
-            // Close current socket if exists
-            if (currentSocket) {
-              currentSocket.close();
-              currentSocket = null;
-            }
-            
-            // Setup private chat with clicked user
-            const res = await fetch("/api/me");
-            const currentUser = await res.json();
-            await setupPrivateChat(username, currentUser);
-          } catch (err) {
-            console.error("Error setting up private chat:", err);
-            addSystemMessage("Failed to start chat with " + username);
-          }
-        });
-        userList.appendChild(li);
-      });
+    // Try to get all users; if unavailable, fallback to online-only rendering
+    let allUsers = null;
+    try {
+      const allRes = await fetch("/api/all-users");
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        // Normalization: support {users: []} or []
+        allUsers = Array.isArray(allData) ? allData : (allData.users || []);
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    if (allUsers && allUsers.length) {
+      renderUserList(allUsers, online);
     } else {
-      userList.innerHTML = `<li><em>No other users online</em></li>`;
+      updateOnlineUsers(online);
     }
 
     // Try to load recent chats if endpoint is available
@@ -475,7 +572,6 @@ async function loadOnlineUsers() {
     }
   }
 }
-
 async function loadRecentChats() {
   try {
     const response = await fetch("/api/recent-chats");
@@ -517,30 +613,38 @@ async function loadRecentChats() {
         li.className = "recent-chat-user";
         li.setAttribute("data-username", chat.username);
         
-        const unreadBadge = chat.unread_count > 0 ? 
-          `<span class="unread-badge">${chat.unread_count}</span>` : '';
+        // Build content safely using DOM APIs
+        const dot = document.createElement("span");
+        dot.className = "chat-dot";
+        li.appendChild(dot);
         
-        li.innerHTML = `
-          <span class="chat-dot"></span>
-          ${escapeHtml(chat.username)}
-          ${unreadBadge}
-          <small class="last-message-time">
-            ${new Date(chat.last_message_time).toLocaleDateString()}
-          </small>
-        `;
+        const nameNode = document.createTextNode(chat.username || "");
+        li.appendChild(nameNode);
+        
+        const unreadCount = Number(chat.unread_count) || 0;
+        if (unreadCount > 0) {
+          const badge = document.createElement("span");
+          badge.className = "unread-badge";
+          badge.textContent = String(unreadCount);
+          li.appendChild(badge);
+        }
+        
+        const timeEl = document.createElement("small");
+        timeEl.className = "last-message-time";
+        timeEl.textContent = new Date(chat.last_message_time).toLocaleDateString();
+        li.appendChild(timeEl);
         
         li.addEventListener("click", async () => {
           try {
             // Close current socket if exists
             if (currentSocket) {
+              intentionalSocketClose = true;
               currentSocket.close();
               currentSocket = null;
             }
             
             // Setup private chat with clicked user
-            const res = await fetch("/api/me");
-            const currentUser = await res.json();
-            await setupPrivateChat(chat.username, currentUser);
+            await setupPrivateChat(chat.username);
           } catch (err) {
             console.error("Error setting up private chat:", err);
             addSystemMessage("Failed to start chat with " + chat.username);
@@ -555,7 +659,118 @@ async function loadRecentChats() {
     // Don't show error to user since this is an optional feature
   }
 }
+let onlineUsersRefreshInterval = null;
 
+function startOnlineUsersRefresh() {
+  // Clear existing interval
+  if (onlineUsersRefreshInterval) {
+    clearInterval(onlineUsersRefreshInterval);
+  }
+  
+  // Refresh online users every 30 seconds as fallback
+  onlineUsersRefreshInterval = setInterval(() => {
+    if (!currentChatUser) { // Only refresh if we're in the user selection view
+      loadOnlineUsers();
+    }
+  }, 30000);
+}
+
+function stopOnlineUsersRefresh() {
+  if (onlineUsersRefreshInterval) {
+    clearInterval(onlineUsersRefreshInterval);
+    onlineUsersRefreshInterval = null;
+  }
+}
+
+export async function loadChatUI(targetUser = null) {
+  // Prepare layout: hide forum pieces and remove any existing chat container
+  const elementsToHide = [
+    ".main-content",
+    ".pagination",
+    ".footer"
+  ];
+  elementsToHide.forEach(selector => {
+    const element = document.querySelector(selector);
+    if (element) element.style.display = "none";
+  });
+  const prevChat = document.querySelector('.chat-container');
+  if (prevChat) prevChat.remove();
+
+  // Chat container + sidebar
+  const chatContainer = document.createElement("div");
+  chatContainer.className = "chat-container";
+
+  const chatMain = document.createElement("div");
+  chatMain.className = "chat-main";
+  chatMain.innerHTML = `
+    <div class="chat-header">
+      <h2 id="chatTitle">Real-Time Forum Chat</h2>
+      <button id="backToForum" class="back-btn">← Back to Forum</button>
+    </div>
+    <div id="messages" class="chat-messages">
+      <div class="message system">Welcome to the chat! 🎉</div>
+      <div id="loadMoreBtn" class="load-more-btn" style="display: none;">Load More Messages</div>
+    </div>
+    <div class="chat-input" ${targetUser ? '' : 'style="display: none;"'}>
+      <input id="msg" type="text" placeholder="Type a message..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  `;
+
+  const chatSidebar = document.createElement("div");
+  chatSidebar.className = "chat-sidebar";
+  chatSidebar.innerHTML = `
+    <h3>Users</h3>
+    <ul class="user-list" id="userList"></ul>
+  `;
+
+  chatContainer.append(chatMain, chatSidebar);
+  document.body.append(chatContainer);
+
+  addChatStyles();
+
+  // ======= Fetch current user =======
+  // Set the global currentUser variable
+  currentUser = { Username: "Anonymous" }; // Default value
+  try {
+    const res = await fetch("/api/me");
+    const data = await res.json();
+    const normalized = {
+      Username: data.Username || data.username || "Anonymous",
+      Initial: data.Initial || data.initial || "",
+      ID: data.ID || data.id || null,
+      authenticated: Boolean(data.authenticated ?? data.Authenticated)
+    };
+    if (normalized.authenticated) {
+      currentUser = { Username: normalized.Username, Initial: normalized.Initial, ID: normalized.ID };
+    }
+  } catch (err) {
+    console.error("Error fetching user state:", err);
+  }
+
+  // Set up event listeners first
+  setupEventListeners();
+
+  // If we're not in a private chat, start the refresh interval
+  if (!targetUser) {
+    startOnlineUsersRefresh();
+  }
+
+  // If targetUser is specified, set up private chat
+  if (targetUser) {
+    await setupPrivateChat(targetUser);
+  } else {
+    // Load online users for selection
+    await loadOnlineUsers();
+    // Open lobby websocket to receive real-time presence updates
+    setupWebSocket(null);
+  }
+
+  if (targetUser) {
+    const msgInput = document.getElementById("msg");
+    if (msgInput) msgInput.focus();
+  }
+}
 function addChatStyles() {
   // Remove existing chat styles
   const existingStyle = document.querySelector('style[data-chat-styles]');
@@ -744,10 +959,13 @@ function addChatStyles() {
     .status-dot, .chat-dot {
       width: 8px;
       height: 8px;
-      background: #27ae60;
       border-radius: 50%;
       margin-right: 0.5rem;
+      background: #95a5a6; /* neutral by default */
     }
+
+    .status-dot.online { background: #27ae60; }
+    .status-dot.offline { background: #e74c3c; }
     
     .chat-dot {
       background: #e74c3c;

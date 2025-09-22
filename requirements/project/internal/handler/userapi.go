@@ -40,3 +40,21 @@ func OnlineUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
+// AllUsersHandler returns list of all registered usernames
+func AllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	users, err := db.GetAllUsernames()
+	if err != nil {
+		http.Error(w, "Failed to load users", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{"users": users})
+}
