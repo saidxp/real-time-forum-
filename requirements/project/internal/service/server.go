@@ -43,11 +43,9 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/api/online-users", middleware.InjectUser(handler.OnlineUsersHandler))
 	forumux.HandleFunc("/api/all-users", middleware.InjectUser(handler.AllUsersHandler))
 	forumux.HandleFunc("/api/chat-messages", handler.GetChatMessagesHandler)
-forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
-forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)
-forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
-
-
+	forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
+	forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)
+	forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
 	// authontication mux
 	forumux.HandleFunc("/login", auth.SubmitLogin)
 	// ===== log out function !!
@@ -85,6 +83,5 @@ func StartServer() {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
-
 	HandleSignals(server)
 }
