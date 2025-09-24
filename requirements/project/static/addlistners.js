@@ -1,17 +1,16 @@
-import { loginbuilding, Logoutfunc } from "./event.js";
-import { registerBuilding } from "./register.js";
-import { NewPost } from "./newpost.js"
-import {POST} from "./post.js"
-import { homeBuild } from "./buildhome.js";
+import { Logoutfunc } from "./event.js";
 import { fetchPosts } from "./setevrntlisnter.js";
 import{showPage} from "./main.js"
 
+
 export function setupGlobalListeners(User) { 
+  //  HER I WILL ADD CHAT BUTOON !!
   document.addEventListener("click", async (event) => {
     let target = event.target;
     console.log("<=(event)======")
     console.log(target)
     console.log("============")
+    
     const filterLink = target.closest("a[data-filter]");
     if (filterLink) {
       event.preventDefault();
@@ -22,8 +21,8 @@ export function setupGlobalListeners(User) {
       // her i will handle the showpage home !!
       // it's must be call 
       //POST(postId, user) 
-      //await showPage("home", user);
-      //sessionStorage.setItem("currentPage", "home");
+      await showPage("home", user);
+      sessionStorage.setItem("currentPage", "home");
       //await homeBuild(user);      
       await fetchPosts(filter, 1);          
       return;                       
@@ -35,32 +34,26 @@ export function setupGlobalListeners(User) {
     // <=====================>
     
     // <==================>
-    // I Was Using When I Want To Go trought nodes to handle nested element but i get problem ! 
-    
+    // I Was Using When I Want To Go trought nodes to handle nested element but i Get Problem <!> 
     if (POSTID) {
       console.log("Yes, clicked readmore!");
       const res = await fetch("/api/me");
       const user = await res.json();
       const postId = POSTID.dataset.id; // 
       console.log("Post ID:", postId);
-      console.log(typeof(postId))
-      // Her I Will Call The Post Isoaltion ...
-      //POST(postId, user) 
       await showPage("Post", user, postId);
       sessionStorage.setItem("currentPage", "Post");
-      console.log("Login clicked!");
+      console.log("Post open clicked!");
     }
     console.log("=====================")
     //while (target && tmodulearget.tagName !== "A") {
       //target = target.parentElement;
     //}
     // <==========>
-
     if (!target) return;
     const id = target.id;
     console.log("the id her", id)
-    // SWITCH CASE WILL BE GOOD LATER !
-    // --- <Login> ---
+    // Handle different button clicks
     if (id === "Login") {
       const res = await fetch("/api/me");
       const user = await res.json();
@@ -68,14 +61,12 @@ export function setupGlobalListeners(User) {
       sessionStorage.setItem("currentPage", "login");
       console.log("Login clicked!");
     }
-    // --- <Register> ---
     else if (id === "Register") {
       const res = await fetch("/api/me");
       const user = await res.json();
       event.preventDefault();
       await showPage("register", user);
       sessionStorage.setItem("currentPage", "register");
-      //registerBuilding();
       console.log("Register clicked!");
     }
     // --- <Logout> ---
@@ -118,8 +109,6 @@ export function setupGlobalListeners(User) {
     sessionStorage.setItem("currentPage", "home")
       // <| Her I Will Check This Her If It's Clicked To Refrech All Page With News! |>
     }
-    // I Will Work With ThiS |<!{.}!> |
-    // <--- <Create Post> ---> !!
     else if (id === "Newpost") {
       console.log("Create Post clicked!");
       const res = await fetch("/api/me");
@@ -132,7 +121,6 @@ export function setupGlobalListeners(User) {
         sessionStorage.setItem("currentPage", "Newpost");
         //NewPost(Object.keys(user.fileds))
     }
-    // --- <Profile> ---
     else if (id === "Profile") {
       console.log("Profile clicked!");
       // call profile page function

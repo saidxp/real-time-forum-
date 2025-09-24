@@ -98,8 +98,8 @@ const (
 	TEMPLATE_PATHS = "./templates/*.html"
 
 	// server helpers
-	PORT               = ":8080"
-	SERVER_RUN_MESSAGE = "\033[2mServer running on http://localhost:8080\033[0m"
+	PORT               = ":8081"
+	SERVER_RUN_MESSAGE = "\033[2mServer running on http://localhost:8081\033[0m"
 
 	// context keys
 	USER_ID_KEY contextKey = "userId"

@@ -25,14 +25,28 @@ func forumMux() *http.ServeMux {
 
 	forumux := http.NewServeMux()
 	
+	// Create hub first
+	hub := handler.NewHub()
+
+	// Set the global hub in auth package to avoid import cycle
+	// Cast to the interface type
+	auth.GlobalHub = hub
+
 	// root mux ====> i will check it roooooooooooot !!! >>
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
-	/// 
+	///
 	forumux.HandleFunc("/api/me", middleware.InjectUser(handler.FirststateHandler))
 	// <=========================|-|=============================>
 	// Her i will get filter post or post !!
 	forumux.HandleFunc("/api/posts", middleware.InjectUser(handler.PostsHandlerApi))
-	
+
+	// API endpoint for getting online users for chat
+	forumux.HandleFunc("/api/online-users", middleware.InjectUser(handler.OnlineUsersHandler))
+	forumux.HandleFunc("/api/all-users", middleware.InjectUser(handler.AllUsersHandler))
+	forumux.HandleFunc("/api/chat-messages", handler.GetChatMessagesHandler)
+	forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
+	forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)
+	forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
 	// authontication mux
 	forumux.HandleFunc("/login", auth.SubmitLogin)
 	// ===== log out function !!
@@ -55,10 +69,9 @@ func forumMux() *http.ServeMux {
 	// like dislike
 	forumux.HandleFunc("/like", middleware.AuthMidleware(handler.LikeHandler))
 	forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
+
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
-	// post
-	//forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 
 	// comment like dislike
 	forumux.HandleFunc("/commentLike", middleware.AuthMidleware(handler.CommentLikeHandler))
@@ -66,11 +79,11 @@ func forumMux() *http.ServeMux {
 
 	// static mux
 	forumux.HandleFunc("/static/", handler.StaticHandler)
-	hub := handler.NewHub()
-	forumux.HandleFunc("/room", hub.ServeWs)
+	
+	// WebSocket endpoint for private chat (protected)
+	forumux.HandleFunc("/room", middleware.AuthMidleware(hub.ServeWs))
 	return forumux
 }
-
 func StartServer() {
 	server := &http.Server{
 		Addr:    repo.PORT,
@@ -84,6 +97,5 @@ func StartServer() {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
-
 	HandleSignals(server)
 }

@@ -2,12 +2,12 @@ package handler
 
 import (
 	"context"
-	auth "forum/internal/auth"
 	db "forum/internal/db"
 	forumerror "forum/internal/error"
 	repo "forum/internal/repository"
 	utils "forum/internal/utils"
 	"net/http"
+	"time"
 )
 
 func ProfilHandler(w http.ResponseWriter, r *http.Request) {
@@ -264,6 +264,30 @@ func ServeDelete(w http.ResponseWriter, r *http.Request) {
 	repo.GLOBAL_TEMPLATE.ExecuteTemplate(w, "delete.html", confMap)
 }
 
+// logoutUser handles the logout functionality without importing auth package
+func logoutUser(w http.ResponseWriter, r *http.Request, userId int) error {
+	// Get session token from cookie
+	sessionCookie, err := r.Cookie("session_token")
+	if err == nil && sessionCookie.Value != "" {
+		// Reset the session in database
+		db.ResetUserSession(sessionCookie.Value)
+	}
+
+	// Clear the session cookie
+	clearCookie := &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+	}
+	http.SetCookie(w, clearCookie)
+
+	return nil
+}
+
 func DeleteConfirmation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		forumerror.BadRequest(w, r)
@@ -290,11 +314,20 @@ func DeleteConfirmation(w http.ResponseWriter, r *http.Request) {
 		ServeDelete(w, r.WithContext(ctx))
 		return
 	}
-	auth.LogoutHandler(w, r)
+
+	// Logout user without calling auth package
+	err = logoutUser(w, r, userId)
+	if err != nil {
+		forumerror.InternalServerError(w, r, err)
+		return
+	}
 
 	err = db.DeleteUser(userId)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
+
+	// Redirect to home page after successful deletion
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
