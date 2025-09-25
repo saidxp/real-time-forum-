@@ -124,6 +124,12 @@ export function setupGlobalListeners(User) {
     else if (id === "Profile") {
       console.log("Profile clicked!");
       // call profile page function
+    }else if (id === "Chat") {
+      console.log("Create Post clicked!");
+      const res = await fetch("/api/me");
+      const user = await res.json();
+      await showPage("Chat", user)
+      sessionStorage.setItem("currentPage", "Chat")
     }
   });
 }

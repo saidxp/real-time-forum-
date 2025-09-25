@@ -167,6 +167,9 @@ function normalizePosts(data) {
 function renderPagination(pagination) {
 
   const container = document.querySelector(".pagination");
+  if (container) {
+    container.style.display = ""
+  }
   if (!container) return;
   // ==> {{-BUILD THE HTML PAGINATION-}} <===
   container.innerHTML = `

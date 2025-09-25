@@ -5,7 +5,12 @@ import {loadChatUI}from "./chatui.js"
 
 // build home it's separate from main !!
 export async function homeBuild(user) {
-
+  const HOWA = document.getElementById('chat-container')
+  if (HOWA) {
+    HOWA.remove()
+  }
+ 
+   
   // check Authenticatec evey time to be sure the user it's authenticated 
   const ii = document.getElementById("Css")
   if (ii) {
@@ -18,6 +23,9 @@ export async function homeBuild(user) {
     mobileHeader.style.display = "none";
   }
   const mainContent = document.querySelector('.main-content');
+  if (mainContent) {
+    mainContent.style.display = ""
+  }
   if (mainContent && !mainContent.querySelector('.hero')) {
     mainContent.innerHTML = `
             <section class="hero">
@@ -52,8 +60,8 @@ export async function homeBuild(user) {
   header.appendChild(logoDiv);
   // User actions container
   const actionsDiv = createEl("div", "user_actions--header");
-  const button = createEl("button","chat",`chat`)
- actionsDiv.appendChild(button)
+  //nst button = createEl("button","chat",`chat`)
+ //tionsDiv.appendChild(button)
 
   // Filter nav
   const nav = createEl("nav", "profile-nav");
@@ -62,10 +70,10 @@ export async function homeBuild(user) {
   const filterDiv = createEl("div", "header__filter-label");
   filterDiv.innerHTML = `Filter <img src="/static/svg/filter.svg" alt="Filter by Categories">`;
   liDropdown.appendChild(filterDiv);
-actionsDiv.appendChild(button)
-button.addEventListener("click",()=>{
-loadChatUI()
-})
+  //tionsDiv.appendChild(button)
+//tton.addEventListener("click",()=>{
+//adChatUI()
+//
   const filterUl = createEl("ul");
   if (user.fileds) {
     Object.keys(user.fileds).forEach(key => {
@@ -108,8 +116,8 @@ loadChatUI()
           </div>
           <ul>
             <li>
-              <a id = "logo" class="header__profile-link">
-                <img src="/static/svg/bolt.svg" class="header__profile-icon">Account Settings
+              <a id ="Chat" class="header__profile-link">
+                <img id="Chat" src="/static/svg/chat.svg" class="header__profile-icon">Forum chat
               </a>
             </li>
             <li>
@@ -143,6 +151,9 @@ loadChatUI()
   // I THIK I DO IT HHHHHHHHH I SOLVE THE PROBLEM !! OF THE ASYNC JS IT'S CRAZY IT'S NOT POINT TO THE PORBBLEM IN THE FIRST !!
   buildHero(user)
   const foot = document.getElementById("333")
+  if (foot) {
+    foot.style.display = ""
+  }
   foot.innerHTML = `
     <div class="footer__container">
       <p class="footer__text">&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>

@@ -37,7 +37,7 @@ export async function showPage(page, user, id, curentPage, targetUser = null) {
       console.error("No post ID available");
       await showPage("home", user);
     }
-  } else if (page === "chat") {
+  } else if (page === "Chat") {
     // Load private chat UI with target user
     // If no targetUser is provided, loadChatUI will show user selection
     await loadChatUI(targetUser);

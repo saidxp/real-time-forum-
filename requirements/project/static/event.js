@@ -5,7 +5,11 @@ import { showPage } from "./main.js";
 export async function loginbuilding() {
 
   // <=( Navigation Clear It Applicate Vanila Is Hill )=> 
-
+  // HOW OLWHHTR TAHWA HHH
+  const HOWA = document.getElementById('chat-container')
+  if (HOWA) {
+    HOWA.remove()
+  }
   const existingHomeHeader = document.querySelector('header.header');
   if (existingHomeHeader) existingHomeHeader.remove();
   const m = document.querySelector(".mobileHeader");
@@ -33,10 +37,10 @@ export async function loginbuilding() {
   const footerContainer = document.querySelector('.footer');
 
   // Clear The Containers
-  if (mainContent) mainContent.innerHTML = "";
+  if (mainContent) mainContent.innerHTML = "" , mainContent.style.display = "";
   if (mobileHeader) mobileHeader.innerHTML = "";
-  if (pagination) pagination.innerHTML = "";
-  if (footerContainer) footerContainer.innerHTML = "";
+  if (pagination) pagination.innerHTML = "" 
+  if (footerContainer) footerContainer.innerHTML = "", footerContainer.style.display = "";
 
   // Helper To Create Elements
   function createEl(tag, className = "", html = "") {

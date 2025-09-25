@@ -708,11 +708,13 @@ function stopOnlineUsersRefresh() {
 }
 
 export async function loadChatUI(targetUser = null) {
-  // Prepare layout: hide forum pieces and remove any existing chat container
+  // Prepare layout: hide forum pieces and remove any existing chat container !!
   const elementsToHide = [
     ".main-content",
     ".pagination",
-    ".footer"
+    ".footer",
+    ".header",
+    ".mobileHeader"
   ];
   elementsToHide.forEach(selector => {
     const element = document.querySelector(selector);
@@ -724,13 +726,15 @@ export async function loadChatUI(targetUser = null) {
   // Chat container + sidebar
   const chatContainer = document.createElement("div");
   chatContainer.className = "chat-container";
+  chatContainer.id = "chat-container"
 
   const chatMain = document.createElement("div");
   chatMain.className = "chat-main";
   chatMain.innerHTML = `
     <div class="chat-header">
       <h2 id="chatTitle">Real-Time Forum Chat</h2>
-      <button id="backToForum" class="back-btn">← Back to Forum</button>
+      <button id="Logo" class="back-btn">← Back to Forum</button>
+      <button id="Out" class="back-btn" >← Logout </button>
     </div>
     <div id="messages" class="chat-messages">
       <div class="message system">Welcome to the chat! 🎉</div>
