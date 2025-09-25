@@ -598,6 +598,13 @@ async function loadOnlineUsers() {
   }
 }
 async function loadRecentChats() {
+  // Rate limiting: only load recent chats every 5 seconds
+  const now = Date.now();
+  if (now - lastRecentChatsLoad < RECENT_CHATS_COOLDOWN) {
+    return;
+  }
+  lastRecentChatsLoad = now;
+  
   try {
     const response = await fetch("/api/recent-chats");
     
@@ -685,6 +692,8 @@ async function loadRecentChats() {
   }
 }
 let onlineUsersRefreshInterval = null;
+let lastRecentChatsLoad = 0;
+const RECENT_CHATS_COOLDOWN = 5000; // 5 seconds
 
 function startOnlineUsersRefresh() {
   // Clear existing interval
