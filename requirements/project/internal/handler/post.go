@@ -13,13 +13,27 @@ import (
 )
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("PostHandler triggered")
-
+	
+	// Only allow GET requests
 	if r.Method != http.MethodGet {
-		forumerror.MethodNotAllowed(w, r)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]any{
+			"status":  "error",
+			"message": "Method not allowed. This endpoint only supports GET requests.",
+		})
 		return
 	}
-
+	if r.Header.Get("Accept") == "text/html" {
+    // User typed in the URL or clicked a link
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusForbidden)
+    json.NewEncoder(w).Encode(map[string]any{
+        "status":  "error",
+        "message": "This endpoint is only accessible via SPA (JavaScript fetch).",
+    })
+    return
+	}
 	var resp repo.PostResponse
 
 	// ====== Authentication state ======

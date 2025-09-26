@@ -15,36 +15,23 @@ import (
 var OnlineUsers = make(map[int]string) 
 
 func SubmitLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("")
-	if r.Method != http.MethodPost {
-		forumerror.MethodNotAllowed(w, r)
-		return
-	}
 
 	var payload struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]any{
-			"status":  "error",
-			"message": "invalid request",
-		})
+		 
 		return
 	}
-
 	username := payload.Username
 	password := payload.Password
-
 	exist, err := db.AlreadyExists(username, username)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-   
 	if (!utils.ValidUsername(username) && !utils.ValidEmail(username)) || !utils.ValidPassword(password) || !exist {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]any{
@@ -53,13 +40,11 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	userId, hash, err := db.GetUserHashByUsername(username)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-
 	if !utils.CheckPassword(password, hash) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]any{

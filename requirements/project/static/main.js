@@ -8,6 +8,30 @@ import { NewPost } from "./newpost.js";
 
 let currentPage = "login";
 
+// Her I Will Need To Handle The Message Error !! 
+// <=====>
+export function showErrorPage({ 
+  title = "Page not found", 
+  message = "", 
+  statusCode = "", 
+  statusText = "" 
+} = {}) {
+  const main = document.querySelector(".main-content");
+  if (!main) return;
+
+  main.innerHTML = `
+    <div class="error-container">
+      <h1 class="error-title">${title}</h1>
+      <p class="error-message">${message}</p>
+      <div class="error-details">
+        ${statusCode ? `<p>${statusCode}</p>` : ""}
+        ${statusText ? `<p>${statusText}</p>` : ""}
+      </div>
+      <a href="/" class="home-button">Go Home</a>
+    </div>
+  `;
+}
+
 export async function showPage(page, user, id, curentPage, targetUser = null) {
   currentPage = page;
   console.log("Showpage id ", id)
@@ -54,26 +78,54 @@ export async function startPrivateChat(targetUsername) {
   }
   await showPage("chat", user, null, null, targetUsername);
   sessionStorage.setItem("currentPage", "chat");
-
 }
 
 window.onload = async () => {
-  //  her i will fetch the state off it !
-  const res = await fetch("/api/me");
-  const user = await res.json();
-  if (!user || !user.authenticated) {
-    currentPage = "login";
-  } else {
-    // Authenticated: either restore saved page or default to home
-    const savedPage = sessionStorage.getItem("currentPage");
-    currentPage = savedPage || "home";
+
+  let user = { authenticated: false };
+  try {
+    const res = await fetch("/api/me");  
+    if (res.ok) user = await res.json();
+  } catch (err) {
+    console.error("Error fetching user:", err);
   }
-  // Soo Her I Will Handle When The User It's Autenticated It's Will
-  // restore from sessionStorage if available
+
+  const path = window.location.pathname;
+
+  
+  const validPages = {
+    "/": "home",
+    "/home": "home",
+    "/login": "login",
+    "/register": "register",
+    "/newPost": "Newpost",
+    "/post": "Post",
+    "/chat": "Chat"
+  };
+
+  let currentPage = validPages[path] || null;
+
+  if (!currentPage) {
+  
+    showErrorPage({
+      title: "404 - Page not found",
+      message: "This page does not exist."
+    });
+    return;
+  }
+
+  if (user.authenticated) {
+    if (currentPage === "login" || currentPage === "register") {
+      currentPage = "home";
+    }
+  } else {
+    const authRequiredPages = ["home", "Newpost", "Post", "Chat"];
+    if (authRequiredPages.includes(currentPage)) {
+      currentPage = "login";
+    }
+  }
   const savedPage = sessionStorage.getItem("currentPage");
   if (savedPage) currentPage = savedPage;
-  
   await showPage(currentPage, user);
-  setupGlobalListeners(user)
-  // If the backend says "not authenticated", force login page.
+  setupGlobalListeners(user);
 };
