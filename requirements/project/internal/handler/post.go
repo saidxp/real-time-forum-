@@ -10,30 +10,28 @@ import (
 	"net/http"
 	"strconv"
 	"encoding/json"
+	"log"
 )
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
-	
+	log.Printf("PostHandler hit: method=%s accept=%q", r.Method, r.Header.Get("Accept"))
+
 	// Only allow GET requests
-	if r.Method != http.MethodGet {
+	 if r.Method != http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(map[string]any{
 			"status":  "error",
-			"message": "Method not allowed. This endpoint only supports GET requests.",
+			"message": "Method not allowed. Only GET is supported.",
 		})
 		return
 	}
-	if r.Header.Get("Accept") == "text/html" {
-    // User typed in the URL or clicked a link
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusForbidden)
-    json.NewEncoder(w).Encode(map[string]any{
-        "status":  "error",
-        "message": "This endpoint is only accessible via SPA (JavaScript fetch).",
-    })
-    return
+	accept := r.Header.Get("Accept")
+	if accept == "" || accept == "*/*" || containsHTML(accept) {
+ 		http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+		return
 	}
+	
 	var resp repo.PostResponse
 
 	// ====== Authentication state ======
@@ -116,7 +114,11 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		forumerror.InternalServerError(w, r, err)
 	}
 }
-
+func containsHTML(accept string) bool {
+	return len(accept) > 0 && (accept == "text/html" || 
+	                          accept == "application/xhtml+xml" ||
+	                          (len(accept) >= 9 && accept[:9] == "text/html"))
+}
 
 /*
 func PostHandler(w http.ResponseWriter, r *http.Request) {

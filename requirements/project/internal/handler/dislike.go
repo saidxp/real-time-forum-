@@ -12,9 +12,23 @@ import (
 
 func DislikeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		forumerror.MethodNotAllowed(w, r)
+		if r.Method == http.MethodGet {
+		 
+			http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+			return
+		}
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Method not allowed. Use POST",
+		})
 		return
 	}
+	if r.Header.Get("X-Requested-With") != "fetch" {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "This endpoint is only accessible via the SPA",
+		})
+		return
+	}
+
 	postId, err := strconv.ParseInt(r.FormValue("post_id"), 10, 0)
 	IsPostExist, err2 := db.IsPostExist(int(postId))
 	if err != nil || !IsPostExist {
@@ -45,9 +59,23 @@ func DislikeHandler(w http.ResponseWriter, r *http.Request) {
 
 func CommentDislikeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		forumerror.MethodNotAllowed(w, r)
+		if r.Method == http.MethodGet {
+			http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+			return
+		}
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Method not allowed. Use POST",
+		})
 		return
 	}
+	
+	if r.Header.Get("X-Requested-With") != "fetch" {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "This endpoint is only accessible via the SPA",
+		})
+		return
+	}
+
 
 	postId, err := strconv.ParseInt(r.FormValue("post_id"), 10, 0)
 	IsPostExist, err2 := db.IsPostExist(int(postId))

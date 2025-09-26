@@ -18,7 +18,7 @@ export function showErrorPage({
 } = {}) {
   const main = document.querySelector(".main-content");
   if (!main) return;
-
+  main.innerHTML = ""
   main.innerHTML = `
     <div class="error-container">
       <h1 class="error-title">${title}</h1>
@@ -27,7 +27,7 @@ export function showErrorPage({
         ${statusCode ? `<p>${statusCode}</p>` : ""}
         ${statusText ? `<p>${statusText}</p>` : ""}
       </div>
-      <a href="/" class="home-button">Go Home</a>
+      <a id ="Logo" class="home-button">Go Home</a>
     </div>
   `;
 }
@@ -35,7 +35,13 @@ export function showErrorPage({
 export async function showPage(page, user, id, curentPage, targetUser = null) {
   currentPage = page;
   console.log("Showpage id ", id)
-  
+  if (page === "unauthorized") {
+    showErrorPage({
+      title: "403 - Not Authorized",
+      message: "This endpoint is only accessible from inside the app."
+    });
+    return;
+  }
   if (page === "login") {
     await loginbuilding(user);
   } else if (page === "register") {
@@ -81,7 +87,6 @@ export async function startPrivateChat(targetUsername) {
 }
 
 window.onload = async () => {
-
   let user = { authenticated: false };
   try {
     const res = await fetch("/api/me");  
@@ -89,10 +94,7 @@ window.onload = async () => {
   } catch (err) {
     console.error("Error fetching user:", err);
   }
-
   const path = window.location.pathname;
-
-  
   const validPages = {
     "/": "home",
     "/home": "home",
@@ -100,32 +102,34 @@ window.onload = async () => {
     "/register": "register",
     "/newPost": "Newpost",
     "/post": "Post",
-    "/chat": "Chat"
+    "/chat": "Chat",
+    "/unauthorized": "unauthorized"  
   };
 
   let currentPage = validPages[path] || null;
 
   if (!currentPage) {
-  
     showErrorPage({
       title: "404 - Page not found",
       message: "This page does not exist."
     });
     return;
   }
-
   if (user.authenticated) {
     if (currentPage === "login" || currentPage === "register") {
       currentPage = "home";
     }
+    
   } else {
     const authRequiredPages = ["home", "Newpost", "Post", "Chat"];
     if (authRequiredPages.includes(currentPage)) {
       currentPage = "login";
     }
   }
+
   const savedPage = sessionStorage.getItem("currentPage");
   if (savedPage) currentPage = savedPage;
   await showPage(currentPage, user);
   setupGlobalListeners(user);
+
 };

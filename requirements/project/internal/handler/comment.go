@@ -15,7 +15,13 @@ import (
 func CommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
-		forumerror.MethodNotAllowed(w, r)
+		if r.Method == http.MethodGet {			 
+			http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+			return
+		}
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Method not allowed. Use POST",
+		})
 		return
 	}
 

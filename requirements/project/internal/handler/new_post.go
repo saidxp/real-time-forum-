@@ -90,6 +90,25 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 
 func PostPostHandler(w http.ResponseWriter, r *http.Request) {
 	// get user id from context
+
+   if r.Method != http.MethodPost {
+      
+        if r.Method == http.MethodGet {
+            http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+            return
+        }
+        writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+            "error": "Method not allowed. Use POST",
+        })
+        return
+    }
+
+    if r.Header.Get("X-Requested-With") != "fetch" {
+        writeJSON(w, http.StatusForbidden, map[string]string{
+            "error": "This endpoint is only accessible via the SPA",
+        })
+        return
+    }
 	userID := r.Context().Value(repository.USER_ID_KEY).(int)
 
 	canPost, err := db.IsUserCanPostToday(userID)
@@ -97,6 +116,7 @@ func PostPostHandler(w http.ResponseWriter, r *http.Request) {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
+
 	if !canPost {
 		writeJSON(w, http.StatusTooManyRequests,
 			map[string]string{"error": "You can only post once per day"})
