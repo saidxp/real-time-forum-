@@ -1,16 +1,16 @@
 import { Logoutfunc } from "./event.js";
 import { fetchPosts } from "./setevrntlisnter.js";
-import{showPage} from "./main.js"
+import { showPage } from "./main.js"
 
 
-export function setupGlobalListeners(User) { 
+export function setupGlobalListeners(User) {
   //  HER I WILL ADD CHAT BUTOON !!
   document.addEventListener("click", async (event) => {
     let target = event.target;
     console.log("<=(event)======")
     console.log(target)
     console.log("============")
-    
+
     const filterLink = target.closest("a[data-filter]");
     if (filterLink) {
       event.preventDefault();
@@ -24,15 +24,15 @@ export function setupGlobalListeners(User) {
       await showPage("home", user);
       sessionStorage.setItem("currentPage", "home");
       //await homeBuild(user);      
-      await fetchPosts(filter, 1);          
-      return;                       
+      await fetchPosts(filter, 1);
+      return;
     }
     const POSTID = event.target.closest("a.readmore");
     // stop for not refrech !! <=> 
     //event.preventDefault();
     // her i will fetch the state of user if he is  Authenicate or NO ...!! 
     // <=====================>
-    
+
     // <==================>
     // I Was Using When I Want To Go trought nodes to handle nested element but i Get Problem <!> 
     if (POSTID) {
@@ -47,7 +47,7 @@ export function setupGlobalListeners(User) {
     }
     console.log("=====================")
     //while (target && tmodulearget.tagName !== "A") {
-      //target = target.parentElement;
+    //target = target.parentElement;
     //}
     // <==========>
     if (!target) return;
@@ -80,33 +80,35 @@ export function setupGlobalListeners(User) {
       console.log("Logo clicked!");
       const res = await fetch("/api/me");
       const user = await res.json();
-      if (!user.authenticated){
-         showPage("login", user)
-         sessionStorage.setItem("currentPage", "login")
-         return
+      
+      window.history.replaceState({}, "", "/home");
+      if (!user.authenticated) {
+        showPage("login", user)
+        sessionStorage.setItem("currentPage", "login")
+        return
       }
       // I Will Get The Css Of Any Css <!-!>
       const css0 = document.getElementById("cssPOST")
       const css1 = document.getElementById("css")
       if (css1) {
-      css1.remove()
-      }else if(css0) {
+        css1.remove()
+      } else if (css0) {
         css0.remove()
       }
-              //\\
-              //\\
-             //  \\
-            //    \\ 
-           //      \\
-          //        \\
-         //          \\  
-        //real-time(-)\\
-       //still not app \\
+      //\\
+      //\\
+      //  \\
+      //    \\ 
+      //      \\
+      //        \\
+      //          \\  
+      //real-time(-)\\
+      //still not app \\
       //  ============= \\
-     // i ...........    \\
-    //====================\\
-    await showPage("home", user)
-    sessionStorage.setItem("currentPage", "home")
+      // i ...........    \\
+      //====================\\
+      await showPage("home", user)
+      sessionStorage.setItem("currentPage", "home")
       // <| Her I Will Check This Her If It's Clicked To Refrech All Page With News! |>
     }
     else if (id === "Newpost") {
@@ -116,14 +118,11 @@ export function setupGlobalListeners(User) {
       // call your create post function
       // I Will CHECK If It's Autenticate Or No !!
       // IF TRUE AUT ELSE GO TO LOGIN !! 
-        // < Show Page Her Of The New Post! >!!
-        await showPage("Newpost", user);
-        sessionStorage.setItem("currentPage", "Newpost");
-        //NewPost(Object.keys(user.fileds))
-    }
-    else if (id === "Profile") {
-      console.log("Profile clicked!");
-      // call profile page function
+      // < Show Page Her Of The New Post! >!!
+     await showPage("newpost", user);
+      window.history.replaceState({}, "", "/newpost");
+      sessionStorage.setItem("currentPage", "newpost");
+      //NewPost(Object.keys(user.fileds))
     }else if (id === "Chat") {
       console.log("Create Post clicked!");
       const res = await fetch("/api/me");

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"encoding/json"
 	"log"
+	"strings"
 )
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,14 +25,17 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			"status":  "error",
 			"message": "Method not allowed. Only GET is supported.",
 		})
+		http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
 		return
 	}
 	accept := r.Header.Get("Accept")
-	if accept == "" || accept == "*/*" || containsHTML(accept) {
- 		http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
-		return
+	if containsHTML(accept) {
+    // Respond as unauthorized
+	// 
+	            http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+ 
+	    return
 	}
-	
 	var resp repo.PostResponse
 
 	// ====== Authentication state ======
@@ -115,9 +119,8 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func containsHTML(accept string) bool {
-	return len(accept) > 0 && (accept == "text/html" || 
-	                          accept == "application/xhtml+xml" ||
-	                          (len(accept) >= 9 && accept[:9] == "text/html"))
+    accept = strings.ToLower(accept)
+    return strings.Contains(accept, "text/html") || strings.Contains(accept, "application/xhtml+xml")
 }
 
 /*

@@ -79,8 +79,6 @@ func PostPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 */
  
-
- 
 // helper to always return proper JSON
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -99,13 +97,6 @@ func PostPostHandler(w http.ResponseWriter, r *http.Request) {
         }
         writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
             "error": "Method not allowed. Use POST",
-        })
-        return
-    }
-
-    if r.Header.Get("X-Requested-With") != "fetch" {
-        writeJSON(w, http.StatusForbidden, map[string]string{
-            "error": "This endpoint is only accessible via the SPA",
         })
         return
     }

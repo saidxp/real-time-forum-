@@ -10,14 +10,13 @@ export async function NewPost(categories = []) {
     link.href = '/static/css/forms.css';
     document.head.appendChild(link);
   }
-
+  
   const mainContent = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
   const pagination = document.querySelector('.pagination');
   const footerContainer = document.querySelector('.footer');
 
   if (mainContent) mainContent.innerHTML = "";
-  //if (mobileHeader) mobileHeader.innerHTML = "";
   if (pagination) pagination.remove()
   if (footerContainer) footerContainer.innerHTML = "";
 
@@ -27,21 +26,7 @@ export async function NewPost(categories = []) {
     if (html) el.innerHTML = html;
     return el;
   }
-
-  // Header
-  //const header = createEl("header", "header");
-  mobileHeader.innerHTML = `
-      <div class="header__logo">
-        <div id ="Logo" class="header__logo-link">
-          <img id ="Logo" src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
-        </div>
-      </div>
-      <div class="header__filter">
-        <h2>Create a new post</h2>
-      </div>
-    `;
-
-  //if (mobileHeader) mobileHeader.appendChild(header);
+ 
 
   // Error container
   const errorMessage = createEl("div", "error-container");
@@ -121,14 +106,15 @@ export async function NewPost(categories = []) {
       errorMessage.style.display = "block";
       return;
     }
-
+    
     try {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
       selectedCategories.forEach(c => formData.append("Categories", c));
 
-      const res = await fetch("/newPost", { method: "POST", body: formData });
+      const res = await fetch("/newPost", { method: "POST", body: formData ,  headers: {
+    "X-Requested-With": "fetch" } });
       const data = await res.json();
       if (!res.ok) {
         errorMessage.innerText = data.error || "Error submitting post";

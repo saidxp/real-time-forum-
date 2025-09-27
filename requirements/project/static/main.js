@@ -27,14 +27,24 @@ export function showErrorPage({
         ${statusCode ? `<p>${statusCode}</p>` : ""}
         ${statusText ? `<p>${statusText}</p>` : ""}
       </div>
-      <a id ="Logo" class="home-button">Go Home</a>
+      <button id ="Logo" class="home-button">Go Home</button>
     </div>
   `;
+    if (title.includes("403")) {
+    window.history.replaceState({}, "", "/unauthorized");
+  } else if (title.includes("404")) {
+    window.history.replaceState({}, "", "/404");
+  }
+  // 
+  setupGlobalListeners()
 }
 
 export async function showPage(page, user, id, curentPage, targetUser = null) {
   currentPage = page;
-  console.log("Showpage id ", id)
+  console.log("im at current page")
+  console.log("currrent",curentPage)
+  console.log(page)
+  console.log("<<=======>>")
   if (page === "unauthorized") {
     showErrorPage({
       title: "403 - Not Authorized",
@@ -51,7 +61,7 @@ export async function showPage(page, user, id, curentPage, targetUser = null) {
     const user = await res.json();
     console.log("howa ola machy hwa howa olahhe tahwa ")
     await homeBuild(user);
-  } else if (page === "Newpost") {
+  } else if (page === "newpost") {
     await NewPost(Object.keys(user.fileds));
   } else if (page === "Post") {
     if (id !== undefined) {
@@ -94,20 +104,23 @@ window.onload = async () => {
   } catch (err) {
     console.error("Error fetching user:", err);
   }
+  console.log("ikhanm             ")
   const path = window.location.pathname;
   const validPages = {
     "/": "home",
     "/home": "home",
     "/login": "login",
     "/register": "register",
-    "/newPost": "Newpost",
+    "/newpost": "newpost",
     "/post": "Post",
     "/chat": "Chat",
     "/unauthorized": "unauthorized"  
   };
-
-  let currentPage = validPages[path] || null;
-
+  console.log("the current path")
+  console.log(path)
+  console.log("the <==========>")
+   currentPage = validPages[path];
+console.log(currentPage)
   if (!currentPage) {
     showErrorPage({
       title: "404 - Page not found",
@@ -119,17 +132,19 @@ window.onload = async () => {
     if (currentPage === "login" || currentPage === "register") {
       currentPage = "home";
     }
-    
   } else {
-    const authRequiredPages = ["home", "Newpost", "Post", "Chat"];
+    const authRequiredPages = ["home", "newpost", "Post", "Chat"];
     if (authRequiredPages.includes(currentPage)) {
       currentPage = "login";
     }
   }
-
-  const savedPage = sessionStorage.getItem("currentPage");
-  if (savedPage) currentPage = savedPage;
+  if (currentPage !== "unauthorized") {
+    sessionStorage.setItem("currentPage", currentPage);
+  }
+  const LAST = sessionStorage.getItem("currentPage")
+  console.log("------")
+  console.log(LAST)
+  console.log("=============")
   await showPage(currentPage, user);
   setupGlobalListeners(user);
-
 };
