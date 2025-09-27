@@ -68,10 +68,7 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
-	// comment like dislike
-	forumux.HandleFunc("/commentLike", middleware.AuthMidleware(handler.CommentLikeHandler))
-	forumux.HandleFunc("/commentDislike", middleware.AuthMidleware(handler.CommentDislikeHandler))
-	// static mux
+	
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 	// WebSocket endpoint for private chat (protected)
 	forumux.HandleFunc("/room", middleware.AuthMidleware(hub.ServeWs))

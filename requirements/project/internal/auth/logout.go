@@ -1,15 +1,21 @@
 package auth
 
 import (
-	db "forum/internal/db"
-	forumerror "forum/internal/error"
+	"encoding/json"
 	"net/http"
 	"time"
-	"encoding/json"
+
+	db "forum/internal/db"
+	forumerror "forum/internal/error"
 )
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	// the cookies check 
+	
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+		return
+	}
+
 	sessionCookie, err := r.Cookie("session_token")
 	if err != nil || sessionCookie.Value == "" {
 		// No valid session, just return JSON
@@ -20,7 +26,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	sessionToken := sessionCookie.Value
 
 	userId, hasSession, err := db.SelectUserSession(sessionToken)
@@ -53,7 +59,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Unix(0, 0),  
+		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
 	}
 	http.SetCookie(w, clearCookie)

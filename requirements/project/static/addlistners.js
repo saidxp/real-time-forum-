@@ -10,7 +10,6 @@ export function setupGlobalListeners(User) {
     console.log("<=(event)======")
     console.log(target)
     console.log("============")
-
     const filterLink = target.closest("a[data-filter]");
     if (filterLink) {
       event.preventDefault();
@@ -28,13 +27,7 @@ export function setupGlobalListeners(User) {
       return;
     }
     const POSTID = event.target.closest("a.readmore");
-    // stop for not refrech !! <=> 
-    //event.preventDefault();
-    // her i will fetch the state of user if he is  Authenicate or NO ...!! 
-    // <=====================>
-
-    // <==================>
-    // I Was Using When I Want To Go trought nodes to handle nested element but i Get Problem <!> 
+ 
     if (POSTID) {
       console.log("Yes, clicked readmore!");
       const res = await fetch("/api/me");
@@ -42,6 +35,9 @@ export function setupGlobalListeners(User) {
       const postId = POSTID.dataset.id; // 
       console.log("Post ID:", postId);
       await showPage("Post", user, postId);
+      window.history.replaceState({}, "", "/Post");
+
+
       sessionStorage.setItem("currentPage", "Post");
       console.log("Post open clicked!");
     }
@@ -127,6 +123,7 @@ export function setupGlobalListeners(User) {
       console.log("Create Post clicked!");
       const res = await fetch("/api/me");
       const user = await res.json();
+      window.history.replaceState({}, "", "/chat");
       await showPage("Chat", user)
       sessionStorage.setItem("currentPage", "Chat")
     }

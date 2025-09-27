@@ -22,12 +22,7 @@ func LikeHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	if r.Header.Get("X-Requested-With") != "fetch" {
-		writeJSON(w, http.StatusForbidden, map[string]string{
-			"error": "This endpoint is only accessible via the SPA",
-		})
-		return
-	}
+	 
 	postId, err := strconv.ParseInt(r.FormValue("post_id"), 10, 0)
 	IsPostExist, err2 := db.IsPostExist(int(postId))
 	if err != nil || !IsPostExist {

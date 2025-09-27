@@ -147,25 +147,6 @@ const commentFormHTML = `
                 <div class="content"><span>${c.content}</span></div>
               </div>
             </div>
-            <span class="divider"></span>
-            <div class="commentBottom">
-              <div class="comment_likes_dislikes">
-                <form action="/commentLike" method="POST">
-                  <input type="hidden" name="post_id" value="${c.PostId}" />
-                  <input type="hidden" name="comment_id" value="${c.CommentId}" />
-                  <button type="submit" class="likebtn">
-                    <img src="/static/svg/${c.IsCommentLikedByUser ? 'green_like' : 'like'}.svg" alt="like"> ${c.CommentLikes}
-                  </button>
-                </form>
-                <form action="/commentDislike" method="POST">
-                  <input type="hidden" name="post_id" value="${c.PostId}" />
-                  <input type="hidden" name="comment_id" value="${c.CommentId}" />
-                  <button type="submit" class="dislikebtn">
-                    <img src="/static/svg/${c.IsCommentDislikedByUser ? 'red_dislike' : 'dislike'}.svg" alt="dislike"> ${c.CommentDislikes}
-                  </button>
-                </form>
-              </div>
-            </div>
           </div>
         </div>
       `).join('')
@@ -371,7 +352,6 @@ function escapeHtml(s) {
 }
 
 function createCommentNode(c) {
-
   const id = c.comment_id ?? c.CommentId ?? c.commentId ?? "";
   const initial = c.initial ?? c.Initial ?? "";
   const username = c.username ?? c.Username ?? "";
@@ -385,7 +365,7 @@ function createCommentNode(c) {
         <div class="initial">${escapeHtml(initial)}</div>
         <div class="info">
           <div class="publisher"><strong>${escapeHtml(username)}</strong></div>
-          <div class="content"><span>${escapeHtml(content)}</span></div>
+          <div class="content"><span>${content}</span></div>
         </div>
       </div>
       <span class="divider"></span>

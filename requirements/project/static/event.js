@@ -178,6 +178,7 @@ export async function Logoutfunc() {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+           "X-Requested-With": "fetch" 
       },
     });
     const data = await response.json();

@@ -1,8 +1,12 @@
 import { homeBuild } from "./buildhome.js";
 import { showPage } from "./main.js";
 
-export async function NewPost(categories = []) {
+export async function NewPost(categories = [], user) {
   // Load CSS
+    if (!user) {
+    const res = await fetch("/api/me");
+    user = await res.json();
+  }
   if (!document.querySelector('link[href*="forms.css"]')) {
     const link = document.createElement('link');
     link.id = "Css"
@@ -26,7 +30,33 @@ export async function NewPost(categories = []) {
     if (html) el.innerHTML = html;
     return el;
   }
- 
+
+  const existingHeader = document.querySelector('header.header');
+  if (existingHeader) existingHeader.remove();
+  if (mobileHeader) {
+    mobileHeader.innerHTML = "";
+    mobileHeader.style.display = "";
+  }
+  if (mobileHeader) {
+    mobileHeader.innerHTML = `
+      <div class="logo"><img id="Logo" src="/static/svg/logo.svg" alt="Logo"></div>
+      <div class="mobileHeader_profile">
+        <nav class="profile-nav">
+          <ul>
+            <li class="profile-dropdown">
+              <div class="header__profile">
+                <div class="initial">${user.Initial || ''}</div>
+                <div class="username">${user.Username || ''}</div>
+              </div>
+              <ul>
+                <li><a href="/profile"><img src="/static/svg/bolt.svg" /> Account Settings</a></li>
+                <li><a id ="Out"> <img src="/static/svg/log-out.svg" /> Logout</a></li>
+              </ul>
+            </li>
+          </ul>
+        </nav>
+      </div>`;
+  }
 
   // Error container
   const errorMessage = createEl("div", "error-container");

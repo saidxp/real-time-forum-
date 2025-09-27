@@ -35,7 +35,7 @@ export function showErrorPage({
   } else if (title.includes("404")) {
     window.history.replaceState({}, "", "/404");
   }
-  // 
+  // ================================ \\)
   setupGlobalListeners()
 }
 
@@ -62,7 +62,7 @@ export async function showPage(page, user, id, curentPage, targetUser = null) {
     console.log("howa ola machy hwa howa olahhe tahwa ")
     await homeBuild(user);
   } else if (page === "newpost") {
-    await NewPost(Object.keys(user.fileds));
+    await NewPost(Object.keys(user.fileds), user);
   } else if (page === "Post") {
     if (id !== undefined) {
       sessionStorage.setItem("currentPostId", id);
@@ -70,9 +70,8 @@ export async function showPage(page, user, id, curentPage, targetUser = null) {
       id = sessionStorage.getItem("currentPostId");
     }
     if (id) {
-      const re = await fetch("/api/me");
-      const us = await re.json();
-      POST(id, us, curentPage);
+      
+      POST(id, user, curentPage);
     } else {
       console.error("No post ID available");
       await showPage("home", user);
@@ -97,6 +96,7 @@ export async function startPrivateChat(targetUsername) {
 }
 
 window.onload = async () => {
+
   let user = { authenticated: false };
   try {
     const res = await fetch("/api/me");  
@@ -104,23 +104,24 @@ window.onload = async () => {
   } catch (err) {
     console.error("Error fetching user:", err);
   }
-  console.log("ikhanm             ")
-  const path = window.location.pathname;
+   const path = window.location.pathname;
   const validPages = {
     "/": "home",
     "/home": "home",
     "/login": "login",
     "/register": "register",
     "/newpost": "newpost",
-    "/post": "Post",
+    "/Post": "Post",
     "/chat": "Chat",
     "/unauthorized": "unauthorized"  
   };
+
   console.log("the current path")
   console.log(path)
   console.log("the <==========>")
-   currentPage = validPages[path];
-console.log(currentPage)
+  currentPage = validPages[path];
+  console.log(currentPage)
+
   if (!currentPage) {
     showErrorPage({
       title: "404 - Page not found",
@@ -136,6 +137,7 @@ console.log(currentPage)
     const authRequiredPages = ["home", "newpost", "Post", "Chat"];
     if (authRequiredPages.includes(currentPage)) {
       currentPage = "login";
+      console.log("ana hna")
     }
   }
   if (currentPage !== "unauthorized") {
@@ -147,4 +149,5 @@ console.log(currentPage)
   console.log("=============")
   await showPage(currentPage, user);
   setupGlobalListeners(user);
+
 };
