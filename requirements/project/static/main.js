@@ -10,48 +10,93 @@ let currentPage = "login";
 
 // Her I Will Need To Handle The Message Error !! 
 // <=====>
-export function showErrorPage({ 
-  title = "Page not found", 
-  message = "", 
-  statusCode = "", 
-  statusText = "" 
-} = {}) {
-  const main = document.querySelector(".main-content");
-  if (!main) return;
-  main.innerHTML = ""
-  main.innerHTML = `
-    <div class="error-container">
-      <h1 class="error-title">${title}</h1>
-      <p class="error-message">${message}</p>
-      <div class="error-details">
-        ${statusCode ? `<p>${statusCode}</p>` : ""}
-        ${statusText ? `<p>${statusText}</p>` : ""}
+  export function showErrorPage({ 
+    title = "Page not found", 
+    message = "", 
+    statusCode = "", 
+    statusText = "" 
+  } = {}) {
+    const main = document.querySelector(".main-content");
+    if (!main) return;
+  
+  
+    main.innerHTML = "";
+  
+    main.innerHTML = `
+      <div class="error-container">
+        <h1 class="error-title">${title}</h1>
+        <p class="error-message">${message}</p>
+        <div class="error-details">
+          ${statusCode ? `<p>Status Code: ${statusCode}</p>` : ""}
+          ${statusText ? `<p>Status Text: ${statusText}</p>` : ""}
+        </div>
+        <button id="Logo" class="home-button">Go Home</button>
       </div>
-      <button id ="Logo" class="home-button">Go Home</button>
-    </div>
-  `;
+    `;
+  
+    // Update browser history to match the error page
     if (title.includes("403")) {
-    window.history.replaceState({}, "", "/unauthorized");
-  } else if (title.includes("404")) {
-    window.history.replaceState({}, "", "/404");
+      window.history.replaceState({}, "", "/unauthorized");
+    } else if (title.includes("404")) {
+      window.history.replaceState({}, "", "/404");
+    } else if (title.includes("400")) {
+      window.history.replaceState({}, "", "/BadRequest");
+    } else if (title.includes("500")) {
+      window.history.replaceState({}, "", "/servererror");
+    } else if (title.includes("429")) {
+      window.history.replaceState({}, "", "/TooManyRequests");
+    }
+  
+    // Reattach global listeners
+    setupGlobalListeners();
   }
-  // ================================ \\)
-  setupGlobalListeners()
-}
+  
+export async function showPage(page, user, id, currentPage, targetUser = null) {
 
-export async function showPage(page, user, id, curentPage, targetUser = null) {
-  currentPage = page;
-  console.log("im at current page")
-  console.log("currrent",curentPage)
-  console.log(page)
-  console.log("<<=======>>")
-  if (page === "unauthorized") {
-    showErrorPage({
-      title: "403 - Not Authorized",
-      message: "This endpoint is only accessible from inside the app."
-    });
-    return;
+    currentPage = page;
+    console.log("Current page:", currentPage, "Page param:", page);
+  
+    switch (page) {
+      case "unauthorized":
+        showErrorPage({
+          title: "403 - Not Authorized",
+          message: "This endpoint is only accessible from inside the app.",
+          statusCode: 403,
+          statusText: "Forbidden"
+        });
+        break;
+  
+      case "badrequest":
+        showErrorPage({
+          title: "400 - Bad Request",
+          message: "The request was invalid or cannot be processed.",
+          statusCode: 400,
+          statusText: "Bad Request"
+        });
+        break;
+  
+      case "servererror":
+        showErrorPage({
+          title: "500 - Internal Server Error",
+          message: "Something went wrong on our side. Please try again later.",
+          statusCode: 500,
+          statusText: "Internal Server Error"
+        });
+        break;
+  
+      case "toomanyrequests":
+        showErrorPage({
+          title: "429 - Too Many Requests",
+          message: "You have reached the maximum number of comments/posts allowed for today. Please try again later.",
+          statusCode: 429,
+          statusText: "Too Many Requests"
+        });
+        break;
+  
+      default:
+        console.log("Page not handled in showPage:", page);
   }
+
   if (page === "login") {
     await loginbuilding(user);
   } else if (page === "register") {
@@ -71,7 +116,7 @@ export async function showPage(page, user, id, curentPage, targetUser = null) {
     }
     if (id) {
       
-      POST(id, user, curentPage);
+      POST(id, user);
     } else {
       console.error("No post ID available");
       await showPage("home", user);
@@ -113,7 +158,10 @@ window.onload = async () => {
     "/newpost": "newpost",
     "/Post": "Post",
     "/chat": "Chat",
-    "/unauthorized": "unauthorized"  
+    "/unauthorized": "unauthorized" , 
+    "/BadRequest" : "badrequest",
+    "/servererror" : "servererror",
+    "/TooManyRequests" : "toomanyrequests"
   };
 
   console.log("the current path")

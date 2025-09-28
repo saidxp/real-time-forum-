@@ -18,10 +18,11 @@ export async function NewPost(categories = [], user) {
   const mainContent = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
   const pagination = document.querySelector('.pagination');
+  if (pagination) pagination.remove()
   const footerContainer = document.querySelector('.footer');
 
   if (mainContent) mainContent.innerHTML = "";
-  if (pagination) pagination.remove()
+  
   if (footerContainer) footerContainer.innerHTML = "";
 
   function createEl(tag, className = "", html = "") {
@@ -108,8 +109,9 @@ export async function NewPost(categories = [], user) {
     boxGroup.appendChild(div);
   });
 
+  
+  mainContent.appendChild(errorMessage);
   container.appendChild(form);
-  container.appendChild(errorMessage);
 
   // Footer
   const footer = createEl("footer");

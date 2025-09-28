@@ -51,7 +51,7 @@ export async function POST(id, user, page=1) {
   if (main) main.innerHTML = `<p style="text-align:center; margin:2rem;">Loading post...</p>`;
 
   try {
-    const res = await fetch(`/post?Id=${id}&page=${page}`);
+    const res = await fetch(`/post?Id=${id}&page=${page}`, {method : "GET"});
     if (!res.ok) throw new Error("Failed to fetch post");
     const data = await res.json();
 

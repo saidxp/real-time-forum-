@@ -2,23 +2,19 @@ package handler
 
 import (
 	"database/sql"
-	"fmt"
-	db "forum/internal/db"
-	forumerror "forum/internal/error"
-	repo "forum/internal/repository"
+	"encoding/json"
 	"math"
 	"net/http"
 	"strconv"
-	"encoding/json"
-	"log"
 	"strings"
+	db "forum/internal/db"
+	repo "forum/internal/repository"
 )
 
 func PostHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("PostHandler hit: method=%s accept=%q", r.Method, r.Header.Get("Accept"))
-
+ 
 	// Only allow GET requests
-	 if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(map[string]any{
@@ -30,11 +26,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	accept := r.Header.Get("Accept")
 	if containsHTML(accept) {
-    // Respond as unauthorized
-	// 
-	            http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
- 
-	    return
+		http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+
+		return
 	}
 	var resp repo.PostResponse
 
@@ -54,18 +48,23 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	Idpost := r.URL.Query().Get("Id")
 	Id, err := strconv.Atoi(Idpost)
 	if err != nil {
-		forumerror.BadRequest(w, r)
+		//forumerror.BadRequest(w, r)
+		http.Redirect(w, r, "/BadRequest", http.StatusSeeOther)
 		return
 	}
 
 	// ====== Fetch post ======
 	post, err := db.GetPostByID(Id, userID)
 	if err == sql.ErrNoRows {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		//http.Redirect(w, r, "/", http.StatusSeeOther)
+		w.WriteHeader(http.StatusBadRequest)
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
 		return
 	}
 	if err != nil {
-		forumerror.InternalServerError(w, r, err)
+		//forumerror.InternalServerError(w, r, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		http.Redirect(w, r, "/servererror", http.StatusSeeOther)
 		return
 	}
 	resp.Post = post
@@ -75,7 +74,8 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		p, err := strconv.Atoi(pageStr)
 		if err != nil || p < 1 {
-			forumerror.BadRequest(w, r)
+			w.WriteHeader(http.StatusBadRequest)
+			http.Redirect(w, r, "/BadRequest", http.StatusSeeOther)
 			return
 		}
 		page = p
@@ -91,15 +91,21 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	// ====== < Comments >======
 	comments, totalComments, err := db.GetCommentsByPostPaginated(Id, page, userID)
 	if err != nil {
-		forumerror.InternalServerError(w, r, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		http.Redirect(w, r, "/Servererror", http.StatusSeeOther)
+
 		return
 	}
 	if float64(page) > math.Ceil(float64(totalComments)/10) && totalComments > 0 {
-		forumerror.BadRequest(w, r)
+		//forumerror.BadRequest(w, r)
+		w.WriteHeader(http.StatusBadRequest)
+			http.Redirect(w, r, "/BadRequest", http.StatusSeeOther)
 		return
 	}
 	if totalComments == 0 && page != 1 {
-		forumerror.BadRequest(w, r)
+		//forumerror.BadRequest(w, r)
+		w.WriteHeader(http.StatusBadRequest)
+			http.Redirect(w, r, "/BadRequest", http.StatusSeeOther)
 		return
 	}
 	resp.Comments = comments
@@ -110,105 +116,18 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		resp.NextPage = r.URL.Path + "?" + nextQuery.Encode()
 	}
 	// ====== Mark as success ======
-	resp.Success = true	
-	fmt.Println(resp.Comments)
+	resp.Success = true
+	//fmt.Println(resp.Comments)
 	// ====== Send JSON ======
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		forumerror.InternalServerError(w, r, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		http.Redirect(w, r, "/servererror", http.StatusSeeOther)
 	}
 }
+
 func containsHTML(accept string) bool {
-    accept = strings.ToLower(accept)
-    return strings.Contains(accept, "text/html") || strings.Contains(accept, "application/xhtml+xml")
+	accept = strings.ToLower(accept)
+	return strings.Contains(accept, "text/html") || strings.Contains(accept, "application/xhtml+xml")
 }
-
-/*
-func PostHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Howa Hada")
-	if r.Method != http.MethodGet {
-		forumerror.MethodNotAllowed(w, r)
-		return
-	}
-
-	fmt.Println("Howa Hada")
-
-	var confMap = make(map[string]any)
-	userID := r.Context().Value(repo.USER_ID_KEY).(int)
-	if r.Context().Value(repo.USER_ID_KEY).(int) == -1 {
-		confMap["Authenticated"] = false
-	} else {
-		confMap["Authenticated"] = true
-		confMap["Username"] = r.Context().Value(repo.USER_NAME).(string)
-		if confMap["Username"] != "" {
-			confMap["Initial"] = confMap["Username"].(string)[:1]
-		}
-	}
-	Idpost := r.URL.Query().Get("Id")
-	Id, err := strconv.Atoi(Idpost)
-	if err != nil {
-		forumerror.BadRequest(w, r)
-		return
-	}
-	post, err := db.GetPostByID(Id, userID)
-	if err == sql.ErrNoRows {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	}
-	if err != nil {
-		forumerror.InternalServerError(w, r, err)
-		return
-	}
-	confMap["Post"] = post
-
-	page := 1
-	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
-		p, err := strconv.Atoi(pageStr)
-		if err != nil || p < 1 {
-			forumerror.BadRequest(w, r)
-			return
-		}
-		page = p
-	}
-	confMap["CurrentPage"] = page
-	confMap["PrintCurrentPage"] = page != 1
-	confMap["HasPrev"] = page > 1
-
-	if page > 1 {
-		prevQuery := r.URL.Query()
-		prevQuery.Set("page", strconv.Itoa(page-1))
-		confMap["PrevPage"] = r.URL.Path + "?" + prevQuery.Encode()
-	}
-
-	comments, totalComments, err := db.GetCommentsByPostPaginated(Id, page, userID)
-
-	if float64(page) > math.Ceil(float64(totalComments)/10) && totalComments > 0 {
-		forumerror.BadRequest(w, r)
-		return
-	}
-	if totalComments == 0 && page != 1 {
-		forumerror.BadRequest(w, r)
-		return
-	}
-
-	if err != nil {
-		forumerror.InternalServerError(w, r, err)
-		return
-	}
-	confMap["Comments"] = comments
-
-	hasNext := totalComments > page*10
-	confMap["HasNext"] = hasNext
-
-	if hasNext {
-		nextQuery := r.URL.Query()
-		nextQuery.Set("page", strconv.Itoa(page+1))
-		confMap["NextPage"] = r.URL.Path + "?" + nextQuery.Encode()
-	}
-	//repo.GLOBAL_TEMPLATE.ExecuteTemplate(w, "post.html", confMap)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
-		"success":    true,
-		"data" : confMap,
-	}) 
-}
-*/
+ 
