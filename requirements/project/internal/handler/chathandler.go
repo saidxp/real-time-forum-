@@ -175,3 +175,5 @@ func GetUnreadCountHandler(w http.ResponseWriter, r *http.Request) {
 		"unread_count": unreadCount,
 	})
 }
+
+

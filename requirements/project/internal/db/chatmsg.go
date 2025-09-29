@@ -156,3 +156,43 @@ func GetRecentChatUsers(userID int, limit int) ([]map[string]interface{}, error)
 
 	return users, nil
 }
+// Add this function to your chatmsg.go file
+func GetLastMessagesForUser(userID int) ([]map[string]interface{}, error) {
+    query := `
+        SELECT 
+            u.username,
+            MAX(cm.created_at) as last_message_time
+        FROM chat_messages cm
+        JOIN users u ON (
+            (cm.sender_id = u.id AND cm.receiver_id = ?) OR 
+            (cm.receiver_id = u.id AND cm.sender_id = ?)
+        )
+        WHERE u.id != ?
+        GROUP BY u.id, u.username
+        ORDER BY last_message_time DESC
+    `
+
+    rows, err := repo.DB.Query(query, userID, userID, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var messages []map[string]interface{}
+    for rows.Next() {
+        var username string
+        var lastMessageTime time.Time
+
+        err := rows.Scan(&username, &lastMessageTime)
+        if err != nil {
+            return nil, err
+        }
+
+        messages = append(messages, map[string]interface{}{
+            "username":          username,
+            "last_message_time": lastMessageTime,
+        })
+    }
+
+    return messages, nil
+}

@@ -21,6 +21,7 @@ let hasMoreMessages = true;
 let currentSocket = null;
 let currentUser = null;
 let intentionalSocketClose = false;
+let lastMessageTimestamps = new Map();
 
 function setupEventListeners() {
   // Send button listener
@@ -171,6 +172,17 @@ async function loadChatHistory() {
       
       const scrollHeightBefore = messagesDiv.scrollHeight;
 
+      // Track timestamps from loaded messages
+      data.messages.forEach(msg => {
+        if (msg.sender_name && msg.sender_name !== (currentUser ? currentUser.Username : "")) {
+          const msgTime = new Date(msg.created_at).getTime();
+          const existingTime = lastMessageTimestamps.get(msg.sender_name) || 0;
+          if (msgTime > existingTime) {
+            lastMessageTimestamps.set(msg.sender_name, msgTime);
+          }
+        }
+      });
+
       if (messagesLoaded === 0) {
         // Initial load: append oldest -> newest, then scroll to bottom
         (data.messages || []).forEach(msg => {
@@ -217,76 +229,14 @@ async function loadChatHistory() {
   
   isLoadingMessages = false;
 }
-
 async function loadMoreMessages() {
   await loadChatHistory();
 }
 
-function setupWebSocket(targetUser) {
-  if (currentSocket) {
-    intentionalSocketClose = true;
-    currentSocket.close();
-  }
-  
-  const scheme = location.protocol === "https:" ? "wss" : "ws";
-  let socketUrl;
-  if (targetUser) {
-    socketUrl = `${scheme}://${location.host}/room?user1=${encodeURIComponent(currentUser.Username)}&user2=${encodeURIComponent(targetUser)}&username=${encodeURIComponent(currentUser.Username)}`;
-  } else {
-    socketUrl = `${scheme}://${location.host}/room?room=global&username=${encodeURIComponent(currentUser.Username)}`;
-  }
-  currentSocket = new WebSocket(socketUrl);
 
-  currentSocket.onopen = () => {
-    console.log("WebSocket connected");
-    addSystemMessage("Connected to server");
-    
-    // Pause fallback refresh while socket is open; do one initial fetch
-    if (!targetUser) {
-      stopOnlineUsersRefresh();
-      loadOnlineUsers();
-    }
-  };
-  
-  currentSocket.onclose = () => {
-    console.log("WebSocket disconnected");
-    if (!intentionalSocketClose) {
-      addSystemMessage("Disconnected from server");
-    }
-    intentionalSocketClose = false;
-    if (!targetUser) {
-      startOnlineUsersRefresh();
-    }
-  };
-  
-  currentSocket.onerror = (error) => {
-    console.error("WebSocket error:", error);
-    addSystemMessage("Connection error occurred");
-  };
-  
-  currentSocket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      console.log("WebSocket message received:", data);
-      
-      if (data.type === "users") {
-        // In lobby, refresh from API to reflect globally online users; ignore in private chat
-        if (!targetUser) {
-          loadOnlineUsers();
-        }
-      } else if (data.type === "message") {
-        addChatMessage(data.name, data.message);
-      } else if (data.type === "user_joined" || data.type === "user_left") {
-        // Refresh online users when someone joins/leaves
-        if (!targetUser) {
-          loadOnlineUsers();
-        }
-      }
-    } catch (err) {
-      console.error("Invalid JSON received:", event.data);
-    }
-  };
-}
+
+
+
 function renderUserList(allUsers, onlineUsers) {
   const userList = document.getElementById("userList");
   if (!userList) {
@@ -303,8 +253,24 @@ function renderUserList(allUsers, onlineUsers) {
   const disconnected = all.filter(u => !onlineSet.has(u));
 
   // Alphabetical sort when no recent chats ordering is available
-  connected.sort((a, b) => a.localeCompare(b));
-  disconnected.sort((a, b) => a.localeCompare(b));
+    const sortByLastMessage = (a, b) => {
+    const timestampA = lastMessageTimestamps.get(a) || 0;
+    const timestampB = lastMessageTimestamps.get(b) || 0;
+    
+    // If both have timestamps, sort by most recent first
+    if (timestampA && timestampB) {
+      return timestampB - timestampA;
+    }
+    // If only one has timestamp, prioritize it
+    if (timestampA && !timestampB) return -1;
+    if (!timestampA && timestampB) return 1;
+    
+    // If neither has timestamp, sort alphabetically
+    return a.localeCompare(b);
+  };
+
+    connected.sort(sortByLastMessage);
+  disconnected.sort(sortByLastMessage);
 
   // Connected section
   const connectedHeader = document.createElement('li');
@@ -322,6 +288,16 @@ function renderUserList(allUsers, onlineUsers) {
       li.appendChild(dot);
       const nameNode = document.createTextNode(username);
       li.appendChild(nameNode);
+      
+      // Add last message indicator if exists
+      const lastMsgTime = lastMessageTimestamps.get(username);
+      if (lastMsgTime) {
+        const timeEl = document.createElement('small');
+        timeEl.className = 'last-message-indicator';
+        timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
+        li.appendChild(timeEl);
+      }
+      
       li.addEventListener("click", async () => {
         try {
           if (currentSocket) {
@@ -359,6 +335,16 @@ function renderUserList(allUsers, onlineUsers) {
       li.appendChild(dot);
       const nameNode = document.createTextNode(username);
       li.appendChild(nameNode);
+      
+      // Add last message indicator if exists
+      const lastMsgTime = lastMessageTimestamps.get(username);
+      if (lastMsgTime) {
+        const timeEl = document.createElement('small');
+        timeEl.className = 'last-message-indicator';
+        timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
+        li.appendChild(timeEl);
+      }
+      
       li.addEventListener("click", async () => {
         try {
           if (currentSocket) {
@@ -390,15 +376,33 @@ function updateOnlineUsers(users) {
 
   userList.innerHTML = '';
 
+  // Sort by last message timestamp, then alphabetically
+  const sortedUsers = (users || []).filter(username => 
+    !(currentUser && username === currentUser.Username)
+  ).sort((a, b) => {
+    const timestampA = lastMessageTimestamps.get(a) || 0;
+    const timestampB = lastMessageTimestamps.get(b) || 0;
+    
+    // If both have timestamps, sort by most recent first
+    if (timestampA && timestampB) {
+      return timestampB - timestampA;
+    }
+    // If only one has timestamp, prioritize it
+    if (timestampA && !timestampB) return -1;
+    if (!timestampA && timestampB) return 1;
+    
+    // If neither has timestamp, sort alphabetically
+    return a.localeCompare(b);
+  });
+
   // Connected section only (fallback when /api/all-users is not available)
   const connectedHeader = document.createElement('li');
   connectedHeader.className = 'chat-header';
   connectedHeader.innerHTML = '<strong>Connected:</strong>';
   userList.appendChild(connectedHeader);
 
-  if (users && users.length > 0) {
-    users.forEach((username) => {
-      if (currentUser && username === currentUser.Username) return;
+  if (sortedUsers.length > 0) {
+    sortedUsers.forEach((username) => {
       const li = document.createElement("li");
       li.className = "online-user";
       li.setAttribute("data-username", username);
@@ -407,6 +411,16 @@ function updateOnlineUsers(users) {
       li.appendChild(dot);
       const nameNode = document.createTextNode(escapeHtml(username));
       li.appendChild(nameNode);
+      
+      // Add last message indicator if exists
+      const lastMsgTime = lastMessageTimestamps.get(username);
+      if (lastMsgTime) {
+        const timeEl = document.createElement('small');
+        timeEl.className = 'last-message-indicator';
+        timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
+        li.appendChild(timeEl);
+      }
+      
       li.addEventListener("click", async () => {
         try {
           if (currentSocket) {
@@ -559,6 +573,7 @@ function sendMessage() {
     }
   }
 }
+
 async function loadOnlineUsers() {
   try {
     const onlineRes = await fetch("/api/online-users");
@@ -574,7 +589,6 @@ async function loadOnlineUsers() {
       const allRes = await fetch("/api/all-users");
       if (allRes.ok) {
         const allData = await allRes.json();
-        // Normalization: support {users: []} or []
         allUsers = Array.isArray(allData) ? allData : (allData.users || []);
       }
     } catch (e) {
@@ -587,8 +601,10 @@ async function loadOnlineUsers() {
       updateOnlineUsers(online);
     }
 
-    // Try to load recent chats if endpoint is available
-    await loadRecentChats();
+    // Load recent chats ONLY if we haven't loaded timestamps yet
+    if (lastMessageTimestamps.size === 0) {
+      await loadRecentChats();
+    }
   } catch (err) {
     console.error("Error loading online users:", err);
     const userList = document.getElementById("userList");
@@ -597,6 +613,120 @@ async function loadOnlineUsers() {
     }
   }
 }
+
+function setupWebSocket(targetUser) {
+  if (currentSocket) {
+    intentionalSocketClose = true;
+    currentSocket.close();
+  }
+  
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  let socketUrl;
+  if (targetUser) {
+    socketUrl = `${scheme}://${location.host}/room?user1=${encodeURIComponent(currentUser.Username)}&user2=${encodeURIComponent(targetUser)}&username=${encodeURIComponent(currentUser.Username)}`;
+  } else {
+    socketUrl = `${scheme}://${location.host}/room?room=global&username=${encodeURIComponent(currentUser.Username)}`;
+  }
+  currentSocket = new WebSocket(socketUrl);
+
+  currentSocket.onopen = () => {
+    console.log("WebSocket connected");
+    addSystemMessage("Connected to server");
+    
+    if (!targetUser) {
+      stopOnlineUsersRefresh();
+      loadOnlineUsers();
+    }
+  };
+  
+  currentSocket.onclose = () => {
+    console.log("WebSocket disconnected");
+    if (!intentionalSocketClose) {
+      addSystemMessage("Disconnected from server");
+    }
+    intentionalSocketClose = false;
+    if (!targetUser) {
+      startOnlineUsersRefresh();
+    }
+  };
+  
+  currentSocket.onerror = (error) => {
+    console.error("WebSocket error:", error);
+    addSystemMessage("Connection error occurred");
+  };
+  
+  currentSocket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      console.log("WebSocket message received:", data);
+      
+      if (data.type === "users") {
+        if (!targetUser) {
+          loadOnlineUsers();
+        }
+      } else if (data.type === "message") {
+        // Update last message timestamp for the sender OR current user when sending
+        const messageUsername = data.name;
+        const isOwnMessage = messageUsername === (currentUser ? currentUser.Username : "");
+        
+        // If in private chat, track the OTHER person's timestamp when they send
+        if (targetUser && messageUsername === targetUser) {
+          const newTimestamp = Date.now();
+          lastMessageTimestamps.set(messageUsername, newTimestamp);
+          console.log(`Updated timestamp for ${messageUsername}: ${new Date(newTimestamp).toLocaleTimeString()}`);
+        }
+        // If in lobby or receiving a message from someone else, track their timestamp
+        else if (!isOwnMessage) {
+          const newTimestamp = Date.now();
+          lastMessageTimestamps.set(messageUsername, newTimestamp);
+          console.log(`Updated timestamp for ${messageUsername}: ${new Date(newTimestamp).toLocaleTimeString()}`);
+        }
+        // If YOU send a message in private chat, track the recipient's timestamp
+        else if (isOwnMessage && targetUser) {
+          const newTimestamp = Date.now();
+          lastMessageTimestamps.set(targetUser, newTimestamp);
+          console.log(`Updated timestamp for chat partner ${targetUser}: ${new Date(newTimestamp).toLocaleTimeString()}`);
+        }
+        
+        // ALWAYS re-render the user list when a message is received/sent
+        // This ensures sorting updates in real-time even during private chats
+        console.log("Re-rendering user list with new sort order");
+        fetch("/api/online-users")
+          .then(res => res.json())
+          .then(onlineData => {
+            const online = onlineData.users || [];
+            
+            // Check if we have all users
+            return fetch("/api/all-users")
+              .then(allRes => {
+                if (allRes.ok) {
+                  return allRes.json().then(allData => {
+                    const allUsers = Array.isArray(allData) ? allData : (allData.users || []);
+                    if (allUsers && allUsers.length) {
+                      renderUserList(allUsers, online);
+                    } else {
+                      updateOnlineUsers(online);
+                    }
+                  });
+                } else {
+                  updateOnlineUsers(online);
+                }
+              });
+          })
+          .catch(err => console.error("Error refreshing user list:", err));
+        
+        addChatMessage(data.name, data.message);
+      } else if (data.type === "user_joined" || data.type === "user_left") {
+        if (!targetUser) {
+          loadOnlineUsers();
+        }
+      }
+    } catch (err) {
+      console.error("Invalid JSON received:", event.data);
+    }
+  };
+}
+
 async function loadRecentChats() {
   // Rate limiting: only load recent chats every 5 seconds
   const now = Date.now();
@@ -715,100 +845,43 @@ function stopOnlineUsersRefresh() {
     onlineUsersRefreshInterval = null;
   }
 }
-
-export async function loadChatUI(targetUser = null) {
-  // Prepare layout: hide forum pieces and remove any existing chat container !!
-  const elementsToHide = [
-    ".main-content",
-    ".pagination",
-    ".footer",
-    ".header",
-    ".mobileHeader"
-  ];
-  elementsToHide.forEach(selector => {
-    const element = document.querySelector(selector);
-    if (element) element.style.display = "none";
-  });
-  const prevChat = document.querySelector('.chat-container');
-  if (prevChat) prevChat.remove();
-
-  // Chat container + sidebar
-  const chatContainer = document.createElement("div");
-  chatContainer.className = "chat-container";
-  chatContainer.id = "chat-container"
-
-  const chatMain = document.createElement("div");
-  chatMain.className = "chat-main";
-  chatMain.innerHTML = `
-    <div class="chat-header">
-      <h2 id="chatTitle">Real-Time Forum Chat</h2>
-      <button id="Logo" class="back-btn">← Back to Forum</button>
-      <button id="Out" class="back-btn" >← Logout </button>
-    </div>
-    <div id="messages" class="chat-messages">
-      <div class="message system">Welcome to the chat! 🎉</div>
-      <div id="loadMoreBtn" class="load-more-btn" style="display: none;">Load More Messages</div>
-    </div>
-    <div class="chat-input" ${targetUser ? '' : 'style="display: none;"'}>
-      <input id="msg" type="text" placeholder="Type a message..." />
-      <button id="sendBtn">Send</button>
-    </div>
-  `;
-
-  const chatSidebar = document.createElement("div");
-  chatSidebar.className = "chat-sidebar";
-  chatSidebar.innerHTML = `
-    <h3>Users</h3>
-    <ul class="user-list" id="userList"></ul>
-  `;
-
-  chatContainer.append(chatMain, chatSidebar);
-  document.body.append(chatContainer);
-
-  addChatStyles();
-
-  // ======= Fetch current user =======
-  // Set the global currentUser variable
-  currentUser = { Username: "Anonymous" }; // Default value
+async function initializeMessageTimestamps() {
+  if (!currentUser) {
+    console.log("No current user, skipping timestamp initialization");
+    return;
+  }
+  
+  console.log("Initializing message timestamps for user:", currentUser.Username);
+  
   try {
-    const res = await fetch("/api/me");
-    const data = await res.json();
-    const normalized = {
-      Username: data.Username || data.username || "Anonymous",
-      Initial: data.Initial || data.initial || "",
-      ID: data.ID || data.id || null,
-      authenticated: Boolean(data.authenticated ?? data.Authenticated)
-    };
-    if (normalized.authenticated) {
-      currentUser = { Username: normalized.Username, Initial: normalized.Initial, ID: normalized.ID };
+    // Use the existing recent-chats endpoint to populate initial timestamps
+    const response = await fetch('/api/recent-chats');
+    if (response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.recent_chats && data.recent_chats.length > 0) {
+          console.log("Loading initial timestamps from recent chats:", data.recent_chats.length, "users");
+          data.recent_chats.forEach(chat => {
+            if (chat.username && chat.last_message_time) {
+              const timestamp = new Date(chat.last_message_time).getTime();
+              lastMessageTimestamps.set(chat.username, timestamp);
+              console.log(`Set timestamp for ${chat.username}: ${new Date(timestamp).toLocaleString()}`);
+            }
+          });
+          console.log("Total timestamps loaded:", lastMessageTimestamps.size);
+        } else {
+          console.log("No recent chats found");
+        }
+      }
+    } else {
+      console.log("Recent chats endpoint returned status:", response.status);
     }
   } catch (err) {
-    console.error("Error fetching user state:", err);
-  }
-
-  // Set up event listeners first
-  setupEventListeners();
-
-  // If we're not in a private chat, start the refresh interval
-  if (!targetUser) {
-    startOnlineUsersRefresh();
-  }
-
-  // If targetUser is specified, set up private chat
-  if (targetUser) {
-    await setupPrivateChat(targetUser);
-  } else {
-    // Load online users for selection
-    await loadOnlineUsers();
-    // Open lobby websocket to receive real-time presence updates
-    setupWebSocket(null);
-  }
-
-  if (targetUser) {
-    const msgInput = document.getElementById("msg");
-    if (msgInput) msgInput.focus();
+    console.log("Could not load initial message timestamps, using real-time tracking only:", err);
   }
 }
+
 function addChatStyles() {
   // Remove existing chat styles
   const existingStyle = document.querySelector('style[data-chat-styles]');
@@ -976,6 +1049,7 @@ function addChatStyles() {
       background: #2c3e50;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       cursor: pointer;
       transition: background 0.3s;
     }
@@ -1027,6 +1101,14 @@ function addChatStyles() {
       margin-left: 0.5rem;
     }
     
+    .last-message-indicator {
+      margin-left: auto;
+      opacity: 0.7;
+      font-size: 0.7rem;
+      color: #bdc3c7;
+      margin-left: 0.5rem;
+    }
+    
     .recent-chat-user {
       flex-direction: column;
       align-items: flex-start !important;
@@ -1061,3 +1143,110 @@ function addChatStyles() {
   styleSheet.textContent = styles;
   document.head.appendChild(styleSheet);
 }
+export async function loadChatUI(targetUser = null) {
+  // Prepare layout: hide forum pieces and remove any existing chat container !!
+  const elementsToHide = [
+    ".main-content",
+    ".pagination",
+    ".footer",
+    ".header",
+    ".mobileHeader"
+  ];
+  elementsToHide.forEach(selector => {
+    const element = document.querySelector(selector);
+    if (element) element.style.display = "none";
+  });
+  const prevChat = document.querySelector('.chat-container');
+  if (prevChat) prevChat.remove();
+
+  // Chat container + sidebar
+  const chatContainer = document.createElement("div");
+  chatContainer.className = "chat-container";
+  chatContainer.id = "chat-container"
+
+  const chatMain = document.createElement("div");
+  chatMain.className = "chat-main";
+  chatMain.innerHTML = `
+    <div class="chat-header">
+      <h2 id="chatTitle">Real-Time Forum Chat</h2>
+      <button id="Logo" class="back-btn">← Back to Forum</button>
+      <button id="Out" class="back-btn" >← Logout </button>
+    </div>
+    <div id="messages" class="chat-messages">
+      <div class="message system">Welcome to the chat! 🎉</div>
+      <div id="loadMoreBtn" class="load-more-btn" style="display: none;">Load More Messages</div>
+    </div>
+    <div class="chat-input" ${targetUser ? '' : 'style="display: none;"'}>
+      <input id="msg" type="text" placeholder="Type a message..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  `;
+
+  const chatSidebar = document.createElement("div");
+  chatSidebar.className = "chat-sidebar";
+  chatSidebar.innerHTML = `
+    <h3>Users</h3>
+    <ul class="user-list" id="userList"></ul>
+  `;
+
+  chatContainer.append(chatMain, chatSidebar);
+  document.body.append(chatContainer);
+
+  addChatStyles();
+
+  // ======= Fetch current user =======
+  // Set the global currentUser variable
+  currentUser = { Username: "Anonymous" }; // Default value
+  try {
+    const res = await fetch("/api/me");
+    const data = await res.json();
+    const normalized = {
+      Username: data.Username || data.username || "Anonymous",
+      Initial: data.Initial || data.initial || "",
+      ID: data.ID || data.id || null,
+      authenticated: Boolean(data.authenticated ?? data.Authenticated)
+    };
+    if (normalized.authenticated) {
+      currentUser = { Username: normalized.Username, Initial: normalized.Initial, ID: normalized.ID };
+    }
+  } catch (err) {
+    console.error("Error fetching user state:", err);
+  }
+
+  // Initialize message timestamps BEFORE loading users
+  await initializeMessageTimestamps();
+
+  // Set up event listeners first
+  setupEventListeners();
+
+  // If we're not in a private chat, start the refresh interval
+  if (!targetUser) {
+    startOnlineUsersRefresh();
+  }
+
+  // If targetUser is specified, set up private chat
+  if (targetUser) {
+    await setupPrivateChat(targetUser);
+  } else {
+    // Load online users for selection
+    await loadOnlineUsers();
+    // Open lobby websocket to receive real-time presence updates
+    setupWebSocket(null);
+  }
+
+  if (targetUser) {
+    const msgInput = document.getElementById("msg");
+    if (msgInput) msgInput.focus();
+  }
+}
+
+
+function debugTimestamps() {
+  console.log("=== Current Timestamps ===");
+  lastMessageTimestamps.forEach((timestamp, username) => {
+    console.log(`${username}: ${new Date(timestamp).toLocaleString()}`);
+  });
+  console.log("========================");
+}
+
+window.debugTimestamps = debugTimestamps;

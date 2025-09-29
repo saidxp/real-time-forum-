@@ -41,6 +41,10 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
 	forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)
 	forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
+	forumux.HandleFunc("/api/last-messages", middleware.InjectUser(handler.GetLastMessagesHandler))
+
+	// <=========================|-|=============================>
+
 	// authontication mux
 	forumux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
     if r.Method == http.MethodPost {
