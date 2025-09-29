@@ -38,7 +38,11 @@ export async function POST(id, user, page=1) {
                 <div class="username">${user.Username || ''}</div>
               </div>
               <ul>
-                <li><a href="/profile"><img src="/static/svg/bolt.svg" /> Account Settings</a></li>
+                <li>
+              <a id ="Chat" >
+                <img id="Chat" src="/static/svg/chat.svg" >Forum chat
+              </a>
+            </li>
                 <li><a id ="Out"> <img src="/static/svg/log-out.svg" /> Logout</a></li>
               </ul>
             </li>

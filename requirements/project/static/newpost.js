@@ -50,7 +50,7 @@ export async function NewPost(categories = [], user) {
                 <div class="username">${user.Username || ''}</div>
               </div>
               <ul>
-                <li><a href="/profile"><img src="/static/svg/bolt.svg" /> Account Settings</a></li>
+               <li><a id ="Chat"> <img id="Chat" src="/static/svg/chat.svg" class="header__profile-icon">Forum chat </a> </li>
                 <li><a id ="Out"> <img src="/static/svg/log-out.svg" /> Logout</a></li>
               </ul>
             </li>
@@ -165,6 +165,7 @@ export async function NewPost(categories = [], user) {
 
       // Her I Will Handle It By !!!
       await showPage("home", user);
+      window.history.replaceState({}, "", "/home");
       sessionStorage.setItem("currentPage", "home");
       // LocalStorage.setItem("")
       // HomeBuild(user)

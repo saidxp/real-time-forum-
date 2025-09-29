@@ -21,7 +21,7 @@ export function setupGlobalListeners(User) {
       // it's must be call 
       //POST(postId, user) 
       await showPage("home", user);
-      sessionStorage.setItem("currentPage", "home");
+      //sessionStorage.setItem("currentPage", "home");
       //await homeBuild(user);      
       await fetchPosts(filter, 1);
       return;
@@ -54,7 +54,7 @@ export function setupGlobalListeners(User) {
       const res = await fetch("/api/me");
       const user = await res.json();
       await showPage("login", user);
-      sessionStorage.setItem("currentPage", "login");
+      //sessionStorage.setItem("currentPage", "login");
       console.log("Login clicked!");
     }
     else if (id === "Register") {
@@ -62,7 +62,7 @@ export function setupGlobalListeners(User) {
       const user = await res.json();
       event.preventDefault();
       await showPage("register", user);
-      sessionStorage.setItem("currentPage", "register");
+      //sessionStorage.setItem("currentPage", "register");
       console.log("Register clicked!");
     }
     // --- <Logout> ---
@@ -80,7 +80,7 @@ export function setupGlobalListeners(User) {
       window.history.replaceState({}, "", "/home");
       if (!user.authenticated) {
         showPage("login", user)
-        sessionStorage.setItem("currentPage", "login")
+        //sessionStorage.setItem("currentPage", "login")
         return
       }
       // I Will Get The Css Of Any Css <!-!>
@@ -104,7 +104,7 @@ export function setupGlobalListeners(User) {
       // i ...........    \\
       //====================\\
       await showPage("home", user)
-      sessionStorage.setItem("currentPage", "home")
+      //sessionStorage.setItem("currentPage", "home")
       // <| Her I Will Check This Her If It's Clicked To Refrech All Page With News! |>
     }
     else if (id === "Newpost") {
@@ -115,9 +115,10 @@ export function setupGlobalListeners(User) {
       // I Will CHECK If It's Autenticate Or No !!
       // IF TRUE AUT ELSE GO TO LOGIN !! 
       // < Show Page Her Of The New Post! >!!
-     await showPage("newpost", user);
-      window.history.replaceState({}, "", "/newpost");
-      sessionStorage.setItem("currentPage", "newpost");
+      window.history.replaceState({}, "", "/createpost");
+      //sessionStorage.setItem("currentPage", "createpost");
+     await showPage("createpost", user);
+    
       //NewPost(Object.keys(user.fileds))
     }else if (id === "Chat") {
       console.log("Create Post clicked!");
@@ -125,7 +126,7 @@ export function setupGlobalListeners(User) {
       const user = await res.json();
       window.history.replaceState({}, "", "/chat");
       await showPage("Chat", user)
-      sessionStorage.setItem("currentPage", "Chat")
+      //sessionStorage.setItem("currentPage", "Chat")
     }
   });
 }

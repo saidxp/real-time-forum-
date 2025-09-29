@@ -19,6 +19,7 @@ export async function registerBuilding(user) {
   if (mainContent) mainContent.innerHTML = "";
   if (mobileHeader) mobileHeader.innerHTML = "";
   if (pagination) pagination.innerHTML = "";
+  if (pagination) pagination.remove()
   if (footerContainer) footerContainer.innerHTML = "";
 
   // === Helper to create elements ===

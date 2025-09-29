@@ -98,15 +98,18 @@ export async function showPage(page, user, id, currentPage, targetUser = null) {
   }
 
   if (page === "login") {
+    window.history.replaceState({}, "", "/login");
     await loginbuilding(user);
   } else if (page === "register") {
+    window.history.replaceState({}, "", "/register");
     await registerBuilding(user);
   } else if (page === "home") {
     const res = await fetch("/api/me");
     const user = await res.json();
     console.log("howa ola machy hwa howa olahhe tahwa ")
+    window.history.replaceState({}, "", "/home");
     await homeBuild(user);
-  } else if (page === "newpost") {
+  } else if (page === "createpost") {
     await NewPost(Object.keys(user.fileds), user);
   } else if (page === "Post") {
     if (id !== undefined) {
@@ -155,7 +158,7 @@ window.onload = async () => {
     "/home": "home",
     "/login": "login",
     "/register": "register",
-    "/newpost": "newpost",
+    "/createpost": "createpost",
     "/Post": "Post",
     "/chat": "Chat",
     "/unauthorized": "unauthorized" , 
@@ -188,9 +191,9 @@ window.onload = async () => {
       console.log("ana hna")
     }
   }
-  if (currentPage !== "unauthorized") {
-    sessionStorage.setItem("currentPage", currentPage);
-  }
+  //if (currentPage !== "unauthorized") {
+    //sessionStorage.setItem("currentPage", currentPage);
+  //}
   const LAST = sessionStorage.getItem("currentPage")
   console.log("------")
   console.log(LAST)
