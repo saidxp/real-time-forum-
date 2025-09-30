@@ -99,12 +99,21 @@ func GetUserInfo(userId int) (repo.User, error) {
 	}
 	return user, nil
 }
-
+/*
 func AddNewUser(username, email, hashedPass string) error {
 	_, err := repo.DB.Exec(repo.INSERT_USERNAME_EMAIL_PASSHASH, username, email, hashedPass)
 	return err
 }
-
+ */
+func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, age int) error {
+    _, err := repo.DB.Exec(
+        repo.INSERT_USERNAME_EMAIL_PASSHASH,
+        username, email, hashedPass, firstName, lastName, age, gender,
+    )
+    return err
+}
+ 
+ 
 func GetUserHashById(id int) (string, error) {
 	var hash string
 	err := repo.DB.QueryRow(repo.SELECT_PASSHASH_BY_USERID, id).Scan(&hash)

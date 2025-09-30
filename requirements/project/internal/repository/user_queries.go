@@ -4,7 +4,11 @@ const (
 	// insert queries
 	INSERT_NEW_SESSION             = `INSERT INTO sessions (user_id, session_token, expires_at) VALUES (?, ?, DATETIME('now', '+1 hour'))`
 	INSERT_NEW_USER                = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`
-	INSERT_USERNAME_EMAIL_PASSHASH = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`
+	INSERT_USERNAME_EMAIL_PASSHASH =  `
+    INSERT INTO users (username, email, password_hash, first_name, last_name, age, gender)
+    	VALUES (?, ?, ?, ?, ?, ?, ?)
+	`
+
 
 	// select queries
 	SELECT_USER_BY_ID                        = `SELECT * FROM users WHERE id = ?`

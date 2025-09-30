@@ -7,56 +7,74 @@ import (
 	utils "forum/internal/utils"
 	"net/http"
 	"strings"
+	"strconv"
 )
 
 func SubmitRegister(w http.ResponseWriter, r *http.Request) {
-	// Parse JSON body
-	fmt.Println("HHHHHHHHowa")
+	fmt.Println("SubmitRegister called")
 	var input struct {
-		Username        string `json:"username"`
-		Email           string `json:"email"`
-		Password        string `json:"password"`
-		ConfirmPassword string `json:"confirmPassword"`
-	}
+    Username        string `json:"username"`
+    Age             int    `json:"age"`
+    Gender          string `json:"gender"`
+    FirstName       string `json:"first_name"`      
+    LastName        string `json:"last_name"`      
+    Email           string `json:"email"`
+    Password        string `json:"password"`
+    ConfirmPassword string `json:"confirmpassword"`
+}
 
+	// Parse JSON
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		// fallback: form submission
+		// fallback for HTML form submit
 		input.Username = r.FormValue("username")
+		fmt.Println(input.Username)
+		input.Age, _ = strconv.Atoi(r.FormValue("age"))
+		fmt.Println(input.Age)
+		input.Gender = r.FormValue("gender")
+		fmt.Println(input.Gender)
+		input.FirstName = r.FormValue("firstname")
+		fmt.Println(input.FirstName)
+		input.LastName = r.FormValue("lastname")
 		input.Email = r.FormValue("email")
 		input.Password = r.FormValue("password")
-		input.ConfirmPassword = r.FormValue("confirm_password")
-	}
-
-	username := input.Username
-	email := input.Email
-	password := input.Password
-	confirm_password := input.ConfirmPassword
-
+		input.ConfirmPassword = r.FormValue("confirmpassword")
+	}	
+	fmt.Printf("%v\n", input.Username)
 	// === validation ===
-	if !utils.ValidUsername(username) {
+	if !utils.ValidUsername(input.Username) {
 		http.Error(w, `{"status":"error","message":"Invalid username"}`, http.StatusBadRequest)
 		return
 	}
-	if !utils.ValidEmail(email) {
+	if !utils.ValidEmail(input.Email) {
 		http.Error(w, `{"status":"error","message":"Invalid email"}`, http.StatusBadRequest)
 		return
 	}
-	if !utils.ValidPassword(password) {
+	if !utils.ValidPassword(input.Password) {
 		http.Error(w, `{"status":"error","message":"Invalid password"}`, http.StatusBadRequest)
 		return
 	}
-	if confirm_password != password {
+	if input.Password != input.ConfirmPassword {
 		http.Error(w, `{"status":"error","message":"Passwords do not match"}`, http.StatusBadRequest)
 		return
 	}
 
-	hash, err := utils.HashPassword(password)
+	// hash password
+	hash, err := utils.HashPassword(input.Password)
 	if err != nil {
 		http.Error(w, `{"status":"error","message":"Server error"}`, http.StatusInternalServerError)
 		return
 	}
 
-	err = db.AddNewUser(username, email, hash)
+	// insert into DB
+	err = db.AddNewUser(
+		input.Username,
+		input.Email,
+			hash,
+			input.FirstName,
+			input.LastName,
+		input.Gender,
+		input.Age,		 
+	)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			http.Error(w, `{"status":"error","message":"username or email already used"}`, http.StatusConflict)
@@ -66,7 +84,7 @@ func SubmitRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//  <=====================>
+	// success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{

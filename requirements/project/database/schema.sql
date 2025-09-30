@@ -1,15 +1,19 @@
 -- to activate foriegn_keys
 PRAGMA foreign_keys = ON;
 
--- Users Table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    age INTEGER,
+    gender TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- Sessions Table
 CREATE TABLE IF NOT EXISTS sessions (
