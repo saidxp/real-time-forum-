@@ -1,0 +1,9 @@
+{{define "title"}}Posts Index{{end}}
+
+{{define "content"}}
+{{range .Posts}}
+{{template "post_component" .}}
+{{else}}
+<p>No posts found.</p>
+{{end}}
+{{end}}

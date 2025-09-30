@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/profile.css">
+    <link rel="icon" href="/static/svg/favicon.svg" type="image/svg">
+    <title>Update</title>
+</head>
+
+<body>
+     <header class="header">
+        <div class="header__logo">
+            <a href="/" class="header__logo-link">
+                <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+            </a>
+        </div>
+        <div class="logout">
+            <a href="/logout">Logout</a>
+        </div>
+    </header>
+    {{if .username}}
+    <form action="/profile/update/username/save" method="post">
+        <input type="text" id="username" name="username" placeholder="Please type your New Username" minlength="3"
+            maxlength="32" required>
+        <input type="password" id="current" name="current" placeholder="Please type your Password" minlength="8"
+            maxlength="72" required>
+        {{if .Error}}
+        <div class="error-container">
+            {{.Message}}
+        </div>
+        {{end}}
+        <button type="submit">Save</button>
+    </form>
+    {{end}}
+    {{if .email}}
+    <form action="/profile/update/email/save" method="post">
+        <input type="text" id="email" name="email" placeholder="Please type your New Email" minlength="6"
+            maxlength="254" required>
+        <input type="password" id="current" name="current" placeholder="Please type your Password" minlength="8"
+            maxlength="72" required>
+        {{if .Error}}
+        <div class="error-container">
+            {{.Message}}
+        </div>
+        {{end}}
+        <button type="submit">Save</button>
+    </form>
+    </div>
+    {{end}}
+    {{if .password}}
+    <form action="/profile/update/password/save" method="post">
+        <input type="password" id="current" name="current" minlength="8" maxlength="72"
+            placeholder="Please type your Current Password" required>
+        <input type="password" id="new" name="new" minlength="8" maxlength="72"
+            placeholder="Please type your New Password" required>
+        <input type="password" id="confirm" name="confirm" minlength="8" maxlength="72"
+            placeholder="Please Confirm your New Password" required>
+        {{if .Error}}
+        <div class="error-container">
+            {{.Message}}
+        </div>
+        {{end}}
+        <button type="submit">Save</button>
+    </form>
+    {{end}}
+
+    <footer class="footer">
+        <div class="footer__container">
+            <p class="footer__text">
+                &copy; 2025 FORUM — Built with 💙 by the Forum Team
+            </p>
+        </div>
+    </footer>
+</body>
+
+</html>

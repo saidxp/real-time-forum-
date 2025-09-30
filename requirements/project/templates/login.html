@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/forms.css" />
+    <link rel="icon" href="/static/svg/favicon.svg" type="image/svg" />
+    <title>Login</title>
+  </head>
+
+  <body>
+    <header class="header">
+      <div class="header__logo">
+        <a href="/" class="header__logo-link">
+          <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+        </a>
+      </div>
+
+      <div class="header__filter">
+        <h2>Login to your account</h2>
+      </div>
+      <div class="user_actions--header">
+        {{if .Authenticated}}
+        <div class="profile_section--header"></div>
+        <div class="nes_post--header">
+          <a
+            href="/newPost"
+            class="readmore"
+            aria-label="Create new post"
+            id="btn2"
+          >
+            <img src="/static/svg/pencil-line.svg" alt="New post icon" />
+            Create Post
+          </a>
+        </div>
+
+        <nav class="profile-nav">
+          <ul>
+            <li class="profile-dropdown">
+              <div class="header__profile">
+                <div class="initial">{{.Initial}}</div>
+                <div class="username">{{.Username}}</div>
+              </div>
+              <ul>
+                <li>
+                  <a href="/profile" class="header__profile-link">
+                    <img
+                      src="/static/svg/circle-user-round.svg"
+                      class="header__profile-icon"
+                    />
+                    Account Settings
+                  </a>
+                </li>
+                <li>
+                  <a href="/logout" class="header__profile-link">
+                    <img
+                      src="/static/svg/log-out.svg"
+                      class="header__profile-icon"
+                    />
+                    Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </nav>
+        {{else}}
+        <div class="header__auth-links">
+          <a href="/register" class="header__auth-link">Sign Up</a>
+        </div>
+        {{end}}
+      </div>
+    </header>
+
+    <div class="container">
+      <form action="/login" method="POST">
+        <img src="/static/svg/loginleft.svg" alt="" />
+        <h2>Please enter your details</h2>
+        <h1>Welcome back!</h1>
+
+        <div class="formfield">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            name="username"
+            id="username"
+            minlength="3"
+            maxlength="32"
+            placeholder="Username or Email"
+            required
+          />
+        </div>
+
+        <div class="formfield">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            minlength="8"
+            maxlength="72"
+            placeholder="Password"
+            required
+          />
+        </div>
+        {{if .Error}}
+        <div class="error-container">{{.Message}}</div>
+        {{end}}
+        <input type="submit" value="Login" />
+
+        <p>Don't have an account? <a href="/register">Register here</a></p>
+      </form>
+    </div>
+    
+    <footer>
+      <div class="footer-container">
+        <p>&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>
+      </div>
+    </footer>
+  </body>
+</html>

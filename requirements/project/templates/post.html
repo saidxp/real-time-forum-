@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum</title>
+    <link rel="stylesheet" href="/static/css/post.css">
+    <link rel="icon" href="/static/svg/favicon.svg" type="image/svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Forum</title>
+        <link rel="stylesheet" href="/static/css/index.css" />
+        <link rel="icon" href="/static/svg/favicon.svg" type="image/svg+xml" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+    </head>
+
+    <body>
+        <header class="header">
+            <div class="header__logo">
+                <a href="/" class="header__logo-link">
+                    <img src="/static/svg/logo.svg" alt="Logo" class="header__logo-img" />
+                </a>
+            </div>
+
+            <div class="user_actions--header">
+                {{if .Authenticated}}
+                <div class="profile_section--header">
+                </div>
+                <div class="nes_post--header">
+                    <a href="/newPost" class="readmore" aria-label="Create new post" id="btn2">
+                        <img src="/static/svg/pencil-line.svg" alt="New post icon" />
+                        Create Post
+                    </a>
+                </div>
+
+                <nav class="profile-nav">
+                    <ul>
+                        <li class="profile-dropdown">
+                            <div class="header__profile">
+                                <div class="initial">{{.Initial}}</div>
+                                <div class="username">{{.Username}}</div>
+                            </div>
+                            <ul>
+                                <li>
+                                    <a href="/profile" class="header__profile-link">
+                                        <img src="/static/svg/bolt.svg" class="header__profile-icon" />
+                                        Account Settings
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/logout" class="header__profile-link">
+                                        <img src="/static/svg/log-out.svg" class="header__profile-icon" />
+                                        Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+                {{else}}
+                <div class="header__auth-links">
+                    <a href="/register" class="header__auth-link">Sign Up</a>
+                    <a href="/login" class="header__auth-link">Login</a>
+                </div>
+                {{end}}
+            </div>
+        </header>
+
+         <header class="mobileHeader">
+    <div class="logo">
+      <img src="/static/svg/logo.svg" alt="Logo">
+    </div>
+    <div class="mobileHeader_profile">
+      {{if not .Authenticated}}
+      <a href="/login" class="mobileHeader__auth-link">Login</a>
+      <a href="/register" class="mobileHeader__auth-link">Sign Up</a>
+      {{else}}
+      <nav class="profile-nav">
+        <ul>
+          <li class="profile-dropdown">
+            <div class="header__profile">
+              <div class="initial">{{.Initial}}</div>
+              <div class="username">{{.Username}}</div>
+            </div>
+            <ul>
+              <li>
+                <a href="/profile" class="header__profile-link">
+                  <img src="/static/svg/bolt.svg" class="header__profile-icon" />
+                  Account Settings
+                </a>
+              </li>
+              <li>
+                <a href="/logout" class="header__profile-link">
+                  <img src="/static/svg/log-out.svg" class="header__profile-icon" />
+                  Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      {{end}}
+    </div>
+  </header>
+        <main>
+            <div class="container">
+                <div class="post">
+                    <div class="top">
+                        <div class="post_head">
+                            <div class="user_container">
+                                <div class="initial">
+                                    <span>{{.Post.Initial}}</span>
+                                </div>
+                                <div class="info">
+                                    <div class="publisher">
+                                        <strong>{{.Post.Publisher}}</strong>
+                                    </div>
+                                    <div class="date">
+                                        <span>{{.Post.Created_at}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="divider"></span>
+                            <h2>{{.Post.Title}}</h2>
+                        </div>
+                    </div>
+                    <section>
+                        <p>{{.Post.Content}}</p>
+                    </section>
+                    <span class="divider"></span>
+                    <footer>
+                        <section id="likes_dislikes">
+                            {{if .Post.IsLikedByUser}}
+                            <form action="/like" method="POST">
+                                <input type="hidden" name="post_id" value="{{.Post.Id}}">
+                                <button type="submit" class="likebtn"><img src="/static/svg/green_like.svg"
+                                        alt="comment">{{.Post.Likes}}</button>
+                            </form>
+                            {{else}}
+                            <form action="/like" method="POST">
+                                <input type="hidden" name="post_id" value="{{.Post.Id}}">
+                                <button type="submit" class="likebtn"><img src="/static/svg/like.svg"
+                                        alt="comment">{{.Post.Likes}}</button>
+                            </form>
+                            {{end}}
+                            {{if .Post.IsDislikedByUser}}
+                            <form action="/dislike" method="POST">
+                                <input type="hidden" name="post_id" value="{{.Post.Id}}">
+                                <button type="submit" class="dislikebtn"><img src="/static/svg/red_dislike.svg"
+                                        alt="comment">{{.Post.Dislikes}}</button>
+                            </form>
+                            {{else}}
+                            <form action="/dislike" method="POST">
+                                <input type="hidden" name="post_id" value="{{.Post.Id}}">
+                                <button type="submit" class="dislikebtn"><img src="/static/svg/dislike.svg"
+                                        alt="comment">{{.Post.Dislikes}}</button>
+                            </form>
+                            {{end}}
+                        </section>
+                    </footer>
+
+                </div>
+            </div>
+            <div class="containercomment">
+                <form id="form_comment" action="/comment" method="POST">
+                    <input type="hidden" name="post_id" value="{{.Post.Id}}">
+                    <textarea id="comment" name="comment" placeholder="comment..." minlength="1" maxlength="1000"
+                        required></textarea>
+                    <button type="submit"><img src="/static/svg/send.svg" alt="comment"></button>
+                </form>
+            </div>
+            {{if .Comments}}
+            {{range .Comments}}
+            <div class="container">
+                <div class="commentcontainer" id="{{.CommentId}}">
+                    <div class="commentTop">
+                        <div class="initial">
+                            {{.Initial}}
+                        </div>
+                        <div class="info">
+                            <div class="publisher">
+                                <strong>{{.Username}}</strong>
+                            </div>
+                            <div class="content">
+                                <span>{{.Content}}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="divider"></span>
+                    <div class="commentBottom">
+                        <div class="comment_likes_dislikes">
+                            {{if .IsCommentLikedByUser}}
+                            <form action="/commentLike" method="POST">
+                                <input type="hidden" name="post_id" value="{{.PostId}}" />
+                                <input type="hidden" name="comment_id" value="{{.CommentId}}" />
+                                <button type="submit" class="likebtn">
+                                    <img src="/static/svg/green_like.svg" alt="comment" /> {{.CommentLikes}}
+                                </button>
+                            </form>
+                            {{else}}
+                            <form action="/commentLike" method="POST">
+                                <input type="hidden" name="post_id" value="{{.PostId}}" />
+                                <input type="hidden" name="comment_id" value="{{.CommentId}}" />
+                                <button type="submit" class="likebtn">
+                                    <img src="/static/svg/like.svg" alt="comment" /> {{.CommentLikes}}
+                                </button>
+                            </form>
+                            {{end}}
+                            {{if .IsCommentDislikedByUser}}
+                            <form action="/commentDislike" method="POST">
+                                <input type="hidden" name="post_id" value="{{.PostId}}" />
+                                <input type="hidden" name="comment_id" value="{{.CommentId}}" />
+                                <button type="submit" class="dislikebtn">
+                                    <img src="/static/svg/red_dislike.svg" alt="comment" /> {{.CommentDislikes}}
+                                </button>
+                            </form>
+                            {{else}}
+                            <form action="/commentDislike" method="POST">
+                                <input type="hidden" name="post_id" value="{{.PostId}}" />
+                                <input type="hidden" name="comment_id" value="{{.CommentId}}" />
+                                <button type="submit" class="dislikebtn">
+                                    <img src="/static/svg/dislike.svg" alt="comment" /> {{.CommentDislikes}}
+                                </button>
+                            </form>
+                            {{end}}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {{end}}
+            {{else}}
+            <div class="container">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <p>No comments yet.</p>
+                </div>
+            </div>
+            {{end}}
+            <nav class="pagination" aria-label="Pagination navigation">
+                {{if .HasPrev}}
+                <a href="{{.PrevPage}}" class="pagination__link pagination__link--prev" aria-label="Previous page"><img
+                        src="/static/svg/left.svg" alt="previous page"> Previous Page</a>
+                {{else}}
+                <span class="pagination__link pagination__link--prev" aria-label="Previous page"
+                    style="opacity: .3;"><img src="/static/svg/left.svg" alt="previous page"></span>
+                {{end}}
+                <span class="pagination__current" aria-current="page">Page {{.CurrentPage}}</span>
+                {{if .HasNext}}
+                <a href="{{.NextPage}}" class="pagination__link pagination__link--next" aria-label="Next page">Next Page
+                    <img src="/static/svg/right.svg" alt="next page"></a>
+                {{else}}
+                <span class="pagination__link pagination__link--next" aria-label="Next page" style="opacity: .3;"><img
+                        src="/static/svg/right.svg" alt="next page"></span>
+                {{end}}
+            </nav>
+        </main>
+        <footer class="footer">
+            <div class="footer-container">
+                <p>&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>
+            </div>
+        </footer>
+    </body>
+</html>
