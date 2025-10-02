@@ -83,6 +83,9 @@ export function onMessageReceived(username) {
 }
 
 export async function loadOnlineUsers() {
+  const userList = document.getElementById("userList");
+  if (!userList) return;
+  
   try {
     const response = await fetch("/api/online-users");
     if (!response.ok) {
@@ -94,9 +97,13 @@ export async function loadOnlineUsers() {
     
     if (data.users && Array.isArray(data.users)) {
       await renderUserList(data.users);
+    } else {
+      // Show empty state instead of loading
+      userList.innerHTML = '<li class="chat-header"><strong>Online</strong></li><li style="padding: 8px; color: #95a5a6;">No users online</li>';
     }
   } catch (err) {
     console.error("Error loading online users:", err);
+    userList.innerHTML = '<li class="chat-header"><strong>Online</strong></li><li style="padding: 8px; color: #e74c3c;">Error loading users</li>';
   }
 }
 

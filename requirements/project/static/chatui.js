@@ -391,10 +391,7 @@ export async function loadChatUI(targetUser = null) {
   chatSidebar.className = "chat-sidebar";
   chatSidebar.innerHTML = `
     <h3>Users</h3>
-    <ul class="user-list" id="userList">
-      <li class="chat-header"><strong>Connected:</strong></li>
-      <li><em>Loading users...</em></li>
-    </ul>
+    <ul class="user-list" id="userList"></ul>
   `;
 
   chatContainer.append(chatMain, chatSidebar);
@@ -424,11 +421,13 @@ export async function loadChatUI(targetUser = null) {
   await initializeMessageTimestamps();
   setupEventListeners();
 
+  // Load users immediately before WebSocket setup
+  await loadOnlineUsers();
+  
   if (targetUser) {
     await setupPrivateChat(targetUser);
   } else {
     setupWebSocket(null);
-    await loadOnlineUsers();
     startOnlineUsersRefresh();
   }
 
