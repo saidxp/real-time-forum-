@@ -128,5 +128,28 @@ export function setupGlobalListeners(User) {
       await showPage("Chat", user)
       //sessionStorage.setItem("currentPage", "Chat")
     }
+    
+    // Handle chat user clicks
+    const userItem = target.closest('.online-user');
+    if (userItem && userItem.dataset.username) {
+      event.preventDefault();
+      const username = userItem.dataset.username;
+      console.log('User clicked:', username);
+      
+      // Import and call setupPrivateChat
+      try {
+        const { setupPrivateChat } = await import('./chatui.js');
+        const { currentSocket, setIntentionalSocketClose, setCurrentSocket } = await import('./chatState.js');
+        
+        if (currentSocket) {
+          setIntentionalSocketClose(true);
+          currentSocket.close();
+          setCurrentSocket(null);
+        }
+        await setupPrivateChat(username);
+      } catch (err) {
+        console.error('Error setting up private chat:', err);
+      }
+    }
   });
 }

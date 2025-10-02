@@ -4,7 +4,25 @@ import { fetchPosts } from "./setevrntlisnter.js";
 import {loadChatUI}from "./chatui.js"
 
 // build home it's separate from main !!
+
+  import { createFloatingChatIsland, destroyFloatingChatIsland } from "./ChatIsland.js";
+
 export async function homeBuild(user) {
+  // ... your existing code ...
+  
+  // Create floating chat island if user is authenticated
+  if (user.authenticated) {
+    createFloatingChatIsland((username) => {
+      // When user clicks on a username in the island
+      loadChatUI(username);
+    });
+  } else {
+    // Destroy if user logs out
+    destroyFloatingChatIsland();
+  }
+  
+  // ... rest of your code ...
+
   const HOWA = document.getElementById('chat-container')
   if (HOWA) {
     HOWA.remove()

@@ -1,9 +1,11 @@
 //import { homeBuild } from "./buildhome.js";
 //import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 import { showPage } from "./main.js";
+import { destroyFloatingChatIsland } from "./ChatIsland.js";
 
-export async function loginbuilding() {
-
+export async function loginbuilding(user) {
+  // Destroy chat island when entering login page
+  destroyFloatingChatIsland();
   // <=( Navigation Clear It Applicate Vanila Is Hill )=> 
   // HOW OLWHHTR TAHWA HHH
   const HOWA = document.getElementById('chat-container')

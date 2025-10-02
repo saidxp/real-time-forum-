@@ -6,6 +6,7 @@ import { POST } from "./post.js";
 import { loadChatUI } from "./chatui.js";
 import { NewPost } from "./newpost.js";
 
+
 let currentPage = "login";
 
 // Her I Will Need To Handle The Message Error !! 
@@ -129,6 +130,7 @@ export async function showPage(page, user, id, currentPage, targetUser = null) {
     // If no targetUser is provided, loadChatUI will show user selection
     await loadChatUI(targetUser);
   }
+
 }
 
 // Function to start a private chat with a specific user
@@ -202,3 +204,40 @@ window.onload = async () => {
   setupGlobalListeners(user);
 
 };
+function loadchatpart(){
+  const users = document.createElement(".chat-ui .contact");
+const slideOff = document.createElement(".upper");
+const msgsContainer = document.createElement(".chat-ui .msgs");
+const openClose = document.createElement('.open-close')
+const contactsContainer = document.createElement(".chat-ui .wrapper");
+const sendTextarea = document.createElement(".chat-ui .send textarea");
+
+slideOff.onclick = () => slidOff();
+
+users.forEach(
+  (elem) => (elem.onclick = (e) => msgsContainer.classList.toggle("slide-msgs"))
+);
+
+document.addEventListener("keyup", (e) =>
+  e.key == "Escape" ? slidOff() : null
+);
+
+const slidOff = () => msgsContainer.classList.remove("slide-msgs");
+
+sendBtn.onclick = () => {
+
+    if (!sendTextarea.value.trim()) {
+        alert('enter your message')
+    }
+   // sendTextarea.value = ''
+}
+
+////////contact
+openClose.onclick = (e) => { 
+    
+    //flip evg open arrows
+    e.target.classList.toggle('flip')
+    ///open chat list
+    contactsContainer.parentElement.parentElement.classList.toggle('open-contact')
+}
+}

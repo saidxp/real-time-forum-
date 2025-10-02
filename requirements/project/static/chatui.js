@@ -1,4 +1,27 @@
-async function loadCurrentUser() {
+import { 
+  setCurrentUser, 
+  setCurrentChatUserID,
+  setCurrentChatUser,
+  setIntentionalSocketClose,
+  unreadMessages,
+  setMessagesLoaded,
+  setHasMoreMessages,
+  currentChatUserID,
+  isLoadingMessages, 
+  hasMoreMessages,
+  currentSocket,
+  setCurrentSocket,
+  clearUnreadMessages
+} from "./chatState.js";
+import { sendMessage, loadChatHistory } from "./messages.js";
+import { setupWebSocket } from "./websocket.js";
+import { addSystemMessage, initializeMessageTimestamps, loadMoreMessages } from "./messages.js";
+import { startOnlineUsersRefresh, loadOnlineUsers, stopOnlineUsersRefresh } from "./users.js";
+
+// Export currentUser for backward compatibility
+export { currentUser, currentSocket } from "./chatState.js";
+
+export async function loadCurrentUser() {
   try {
     const response = await fetch("/api/me");
     const data = await response.json();
@@ -10,27 +33,33 @@ async function loadCurrentUser() {
   }
 }
 
+// Call this only once on module load
 loadCurrentUser();
 
-// Global variables for chat state
-let currentChatUser = null;
-let currentChatUserID = null;
-let messagesLoaded = 0;
-let isLoadingMessages = false;
-let hasMoreMessages = true;
-let currentSocket = null;
-let currentUser = null;
-let intentionalSocketClose = false;
-let lastMessageTimestamps = new Map();
+export function updateUserNotificationBadge(username, count) {
+  // Update badge in user list
+  const userListItems = document.querySelectorAll(`[data-username="${username}"]`);
+  userListItems.forEach(item => {
+    let badge = item.querySelector('.notification-badge, .unread-badge');
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'notification-badge';
+        item.appendChild(badge);
+      }
+      badge.textContent = count;
+    } else if (badge) {
+      badge.remove();
+    }
+  });
+}
 
-function setupEventListeners() {
-  // Send button listener
+export function setupEventListeners() {
   const sendBtn = document.getElementById("sendBtn");
   if (sendBtn) {
     sendBtn.addEventListener("click", sendMessage);
   }
 
-  // Enter key listener
   const msgInput = document.getElementById("msg");
   if (msgInput) {
     msgInput.addEventListener("keydown", (event) => {
@@ -41,49 +70,46 @@ function setupEventListeners() {
     });
   }
 
-  // Back to forum listener
   const backBtn = document.getElementById("backToForum");
-  if (backBtn) {
-    backBtn.addEventListener("click", async () => {
-  if (currentSocket) {
-    intentionalSocketClose = true;
-    currentSocket.close();
-    currentSocket = null;
-  }
-  currentChatUser = null;
-  
-  // Remove chat container and styles
-  const chatContainer = document.querySelector('.chat-container');
-  if (chatContainer) chatContainer.remove();
-  const chatStyles = document.querySelector('style[data-chat-styles]');
-  if (chatStyles) chatStyles.remove();
-  
-  // Restore hidden forum elements
-  [".main-content", ".pagination", ".footer"].forEach(sel => {
-    const el = document.querySelector(sel);
-    if (el) el.style.display = "";
-  });
-  
-  // Restart online users refresh when going back to user selection
-  startOnlineUsersRefresh();
-  
-  try {
-    const { showPage } = await import("./main.js");
-    await showPage("home", currentUser);
-    sessionStorage.setItem("currentPage", "home");
-  } catch (err) {
-    console.error("Error navigating back to forum:", err);
-  }
-});
+if (backBtn) {
+  backBtn.addEventListener("click", async () => {
+    if (currentSocket) {
+      setIntentionalSocketClose(true);
+      currentSocket.close();
+      setCurrentSocket(null);
+    }
+    setCurrentChatUser(null);
+    window.currentChatUser = null;
+      
+      const chatContainer = document.querySelector('.chat-container');
+      if (chatContainer) chatContainer.remove();
+      const chatStyles = document.querySelector('style[data-chat-styles]');
+      if (chatStyles) chatStyles.remove();
+      
+      [".main-content", ".pagination", ".footer"].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el) el.style.display = "";
+      });
+      
+      startOnlineUsersRefresh();
+      
+      try {
+        const { showPage } = await import("./main.js");
+        const res = await fetch("/api/me");
+        const user = await res.json();
+        await showPage("home", user);
+        sessionStorage.setItem("currentPage", "home");
+      } catch (err) {
+        console.error("Error navigating back to forum:", err);
+      }
+    });
   }
 
-  // Load more messages button
   const loadMoreBtn = document.getElementById("loadMoreBtn");
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", loadMoreMessages);
   }
 
-  // Auto-scroll detection for loading more messages
   const messagesDiv = document.getElementById("messages");
   if (messagesDiv) {
     const debouncedTopLoader = debounce(() => {
@@ -95,36 +121,39 @@ function setupEventListeners() {
   }
 }
 
-async function setupPrivateChat(targetUser) {
-  // Stop periodic refresh when entering private chat
-  stopOnlineUsersRefresh();
+export async function setupPrivateChat(targetUser) {
+ stopOnlineUsersRefresh();
   
-  currentChatUser = targetUser;
+  if (unreadMessages.has(targetUser)) {
+    clearUnreadMessages(targetUser);
+    updateUserNotificationBadge(targetUser, 0);
+  }
+  
+  // Set globally for websocket access
+  setCurrentChatUser(targetUser);
+  window.currentChatUser = targetUser;  // ADD THIS LINE
+  
   const chatTitle = document.getElementById("chatTitle");
   if (chatTitle) {
     chatTitle.textContent = `Chat with ${targetUser}`;
   }
   
-  // Get target user ID
   try {
     const response = await fetch(`/api/user-by-username?username=${encodeURIComponent(targetUser)}`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
     const userData = await response.json();
-    currentChatUserID = userData.id;
+    setCurrentChatUserID(userData.id);
   } catch (err) {
     console.error("Error getting user ID:", err);
     addSystemMessage("Error: Could not find user or chat not available yet");
-    currentChatUserID = null;
-    // Still allow chat via WebSocket, but without DB history
+    setCurrentChatUserID(null);
   }
 
-  // Reset message state
-  messagesLoaded = 0;
-  hasMoreMessages = true;
+  setMessagesLoaded(0);
+  setHasMoreMessages(true);
   
-  // Clear messages except system message
   const messagesDiv = document.getElementById("messages");
   if (messagesDiv) {
     const systemMessages = messagesDiv.querySelectorAll(".message.system");
@@ -132,411 +161,19 @@ async function setupPrivateChat(targetUser) {
     systemMessages.forEach(msg => messagesDiv.appendChild(msg));
   }
 
-  // Load chat history if we have user ID
   if (currentChatUserID) {
     await loadChatHistory();
   }
 
-  // Set up WebSocket connection
   setupWebSocket(targetUser);
   
-  // Show chat input
   const chatInput = document.querySelector(".chat-input");
   if (chatInput) {
     chatInput.style.display = "flex";
   }
 }
 
-async function loadChatHistory() {
-  if (!currentChatUserID || isLoadingMessages) return;
-  
-  isLoadingMessages = true;
-  
-  try {
-    const response = await fetch(
-      `/api/chat-messages?other_user_id=${currentChatUserID}&limit=10&offset=${messagesLoaded}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.messages && data.messages.length > 0) {
-      const messagesDiv = document.getElementById("messages");
-      if (!messagesDiv) {
-        console.error("Messages div not found");
-        return;
-      }
-      
-      const scrollHeightBefore = messagesDiv.scrollHeight;
-
-      // Track timestamps from loaded messages
-      data.messages.forEach(msg => {
-        if (msg.sender_name && msg.sender_name !== (currentUser ? currentUser.Username : "")) {
-          const msgTime = new Date(msg.created_at).getTime();
-          const existingTime = lastMessageTimestamps.get(msg.sender_name) || 0;
-          if (msgTime > existingTime) {
-            lastMessageTimestamps.set(msg.sender_name, msgTime);
-          }
-        }
-      });
-
-      if (messagesLoaded === 0) {
-        // Initial load: append oldest -> newest, then scroll to bottom
-        (data.messages || []).forEach(msg => {
-          addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at), false);
-        });
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      } else {
-        // Load older: prepend at top and maintain scroll position
-        (data.messages || []).forEach(msg => {
-          addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at), true);
-        });
-        const scrollHeightAfter = messagesDiv.scrollHeight;
-        messagesDiv.scrollTop = scrollHeightAfter - scrollHeightBefore;
-      }
-      
-      messagesLoaded += data.messages.length;
-      hasMoreMessages = Boolean(data.hasMore);
-      
-      // Show/hide load more button
-      const loadMoreBtn = document.getElementById("loadMoreBtn");
-      if (loadMoreBtn) {
-        if (hasMoreMessages) {
-          loadMoreBtn.style.display = "block";
-        } else {
-          loadMoreBtn.style.display = "none";
-        }
-      }
-    } else {
-      hasMoreMessages = false;
-      const loadMoreBtn = document.getElementById("loadMoreBtn");
-      if (loadMoreBtn) {
-        loadMoreBtn.style.display = "none";
-      }
-    }
-  } catch (err) {
-    console.error("Error loading chat history:", err);
-    addSystemMessage("Chat history not available yet");
-    hasMoreMessages = false;
-    const loadMoreBtn = document.getElementById("loadMoreBtn");
-    if (loadMoreBtn) {
-      loadMoreBtn.style.display = "none";
-    }
-  }
-  
-  isLoadingMessages = false;
-}
-async function loadMoreMessages() {
-  await loadChatHistory();
-}
-
-
-
-
-
-function renderUserList(allUsers, onlineUsers) {
-  const userList = document.getElementById("userList");
-  if (!userList) {
-    console.error("User list element not found");
-    return;
-  }
-
-  // Reset list; recent chats will be appended later by loadRecentChats()
-  userList.innerHTML = '';
-
-  const onlineSet = new Set(onlineUsers || []);
-  const all = (allUsers || []).filter(u => !(currentUser && u === currentUser.Username));
-  const connected = all.filter(u => onlineSet.has(u));
-  const disconnected = all.filter(u => !onlineSet.has(u));
-
-  // Alphabetical sort when no recent chats ordering is available
-    const sortByLastMessage = (a, b) => {
-    const timestampA = lastMessageTimestamps.get(a) || 0;
-    const timestampB = lastMessageTimestamps.get(b) || 0;
-    
-    // If both have timestamps, sort by most recent first
-    if (timestampA && timestampB) {
-      return timestampB - timestampA;
-    }
-    // If only one has timestamp, prioritize it
-    if (timestampA && !timestampB) return -1;
-    if (!timestampA && timestampB) return 1;
-    
-    // If neither has timestamp, sort alphabetically
-    return a.localeCompare(b);
-  };
-
-    connected.sort(sortByLastMessage);
-  disconnected.sort(sortByLastMessage);
-
-  // Connected section
-  const connectedHeader = document.createElement('li');
-  connectedHeader.className = 'chat-header';
-  connectedHeader.innerHTML = '<strong>Connected:</strong>';
-  userList.appendChild(connectedHeader);
-
-  if (connected.length > 0) {
-    connected.forEach((username) => {
-      const li = document.createElement("li");
-      li.className = "online-user";
-      li.setAttribute("data-username", username);
-      const dot = document.createElement('span');
-      dot.className = 'status-dot online';
-      li.appendChild(dot);
-      const nameNode = document.createTextNode(username);
-      li.appendChild(nameNode);
-      
-      // Add last message indicator if exists
-      const lastMsgTime = lastMessageTimestamps.get(username);
-      if (lastMsgTime) {
-        const timeEl = document.createElement('small');
-        timeEl.className = 'last-message-indicator';
-        timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
-        li.appendChild(timeEl);
-      }
-      
-      li.addEventListener("click", async () => {
-        try {
-          if (currentSocket) {
-            intentionalSocketClose = true;
-            currentSocket.close();
-            currentSocket = null;
-          }
-          await setupPrivateChat(username);
-        } catch (err) {
-          console.error("Error setting up private chat:", err);
-          addSystemMessage("Failed to start chat with " + username);
-        }
-      });
-      userList.appendChild(li);
-    });
-  } else {
-    const empty = document.createElement('li');
-    empty.innerHTML = '<em>No users online</em>';
-    userList.appendChild(empty);
-  }
-
-  // Disconnected section
-  const disconnectedHeader = document.createElement('li');
-  disconnectedHeader.className = 'chat-header';
-  disconnectedHeader.innerHTML = '<strong>Disconnected:</strong>';
-  userList.appendChild(disconnectedHeader);
-
-  if (disconnected.length > 0) {
-    disconnected.forEach((username) => {
-      const li = document.createElement("li");
-      li.className = "online-user";
-      li.setAttribute("data-username", username);
-      const dot = document.createElement('span');
-      dot.className = 'status-dot offline';
-      li.appendChild(dot);
-      const nameNode = document.createTextNode(username);
-      li.appendChild(nameNode);
-      
-      // Add last message indicator if exists
-      const lastMsgTime = lastMessageTimestamps.get(username);
-      if (lastMsgTime) {
-        const timeEl = document.createElement('small');
-        timeEl.className = 'last-message-indicator';
-        timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
-        li.appendChild(timeEl);
-      }
-      
-      li.addEventListener("click", async () => {
-        try {
-          if (currentSocket) {
-            intentionalSocketClose = true;
-            currentSocket.close();
-            currentSocket = null;
-          }
-          await setupPrivateChat(username);
-        } catch (err) {
-          console.error("Error setting up private chat:", err);
-          addSystemMessage("Failed to start chat with " + username);
-        }
-      });
-      userList.appendChild(li);
-    });
-  } else {
-    const empty = document.createElement('li');
-    empty.innerHTML = '<em>No users offline</em>';
-    userList.appendChild(empty);
-  }
-}
-
-function updateOnlineUsers(users) {
-  const userList = document.getElementById("userList");
-  if (!userList) {
-    console.error("User list element not found");
-    return;
-  }
-
-  userList.innerHTML = '';
-
-  // Sort by last message timestamp, then alphabetically
-  const sortedUsers = (users || []).filter(username => 
-    !(currentUser && username === currentUser.Username)
-  ).sort((a, b) => {
-    const timestampA = lastMessageTimestamps.get(a) || 0;
-    const timestampB = lastMessageTimestamps.get(b) || 0;
-    
-    // If both have timestamps, sort by most recent first
-    if (timestampA && timestampB) {
-      return timestampB - timestampA;
-    }
-    // If only one has timestamp, prioritize it
-    if (timestampA && !timestampB) return -1;
-    if (!timestampA && timestampB) return 1;
-    
-    // If neither has timestamp, sort alphabetically
-    return a.localeCompare(b);
-  });
-
-  // Connected section only (fallback when /api/all-users is not available)
-  const connectedHeader = document.createElement('li');
-  connectedHeader.className = 'chat-header';
-  connectedHeader.innerHTML = '<strong>Connected:</strong>';
-  userList.appendChild(connectedHeader);
-
-  if (sortedUsers.length > 0) {
-    sortedUsers.forEach((username) => {
-      const li = document.createElement("li");
-      li.className = "online-user";
-      li.setAttribute("data-username", username);
-      const dot = document.createElement('span');
-      dot.className = 'status-dot online';
-      li.appendChild(dot);
-      const nameNode = document.createTextNode(escapeHtml(username));
-      li.appendChild(nameNode);
-      
-      // Add last message indicator if exists
-      const lastMsgTime = lastMessageTimestamps.get(username);
-      if (lastMsgTime) {
-        const timeEl = document.createElement('small');
-        timeEl.className = 'last-message-indicator';
-        timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
-        li.appendChild(timeEl);
-      }
-      
-      li.addEventListener("click", async () => {
-        try {
-          if (currentSocket) {
-            intentionalSocketClose = true;
-            currentSocket.close();
-            currentSocket = null;
-          }
-          await setupPrivateChat(username);
-        } catch (err) {
-          console.error("Error setting up private chat:", err);
-          addSystemMessage("Failed to start chat with " + username);
-        }
-      });
-      userList.appendChild(li);
-    });
-  } else {
-    const empty = document.createElement('li');
-    empty.innerHTML = '<em>No users online</em>';
-    userList.appendChild(empty);
-  }
-
-  const disconnectedHeader = document.createElement('li');
-  disconnectedHeader.className = 'chat-header';
-  disconnectedHeader.innerHTML = '<strong>Disconnected:</strong>';
-  userList.appendChild(disconnectedHeader);
-  const placeholder = document.createElement('li');
-  placeholder.innerHTML = '<em>Disconnected users require the /api/all-users endpoint</em>';
-  userList.appendChild(placeholder);
-}
-
-async function addChatMessageToHistory(username, message, timestamp, prepend = false) {
-  try {
-    // Use the global currentUser instead of fetching again
-    const currentUsername = currentUser ? currentUser.Username : "Anonymous";
-    
-    const msgContainer = document.createElement("div");
-    msgContainer.classList.add("message-container");
-    if (username === currentUsername) {
-      msgContainer.classList.add("own-message");
-    }
-    msgContainer.innerHTML = `
-      <div class="username">${escapeHtml(username)}</div>
-      <div class="message">${escapeHtml(message)}</div>
-      <div class="timestamp">${timestamp.toLocaleString()}</div>
-    `;
-    
-    const messagesDiv = document.getElementById("messages");
-    if (!messagesDiv) return;
-
-    if (prepend) {
-      const firstMessage = messagesDiv.querySelector(".message-container");
-      if (firstMessage) {
-        messagesDiv.insertBefore(msgContainer, firstMessage);
-      } else {
-        messagesDiv.appendChild(msgContainer);
-      }
-    } else {
-      messagesDiv.appendChild(msgContainer);
-    }
-
-    // Keep the load-more button at the top (for scroll-up model) if it exists
-    const loadMoreBtn = document.getElementById("loadMoreBtn");
-    if (loadMoreBtn) {
-      messagesDiv.insertBefore(loadMoreBtn, messagesDiv.firstChild);
-    }
-  } catch (err) {
-    console.error("Error adding message to history:", err);
-  }
-}
-
-async function addChatMessage(username, message) {
-  try {
-    // Use the global currentUser instead of fetching again
-    const currentUsername = currentUser ? currentUser.Username : "Anonymous";
-    
-    const msgContainer = document.createElement("div");
-    msgContainer.classList.add("message-container");
-    if (username === currentUsername) {
-      msgContainer.classList.add("own-message");
-    }
-    msgContainer.innerHTML = `
-      <div class="username">${escapeHtml(username)}</div>
-      <div class="message">${escapeHtml(message)}</div>
-      <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-    `;
-    
-    const messagesDiv = document.getElementById("messages");
-    if (messagesDiv) {
-      messagesDiv.appendChild(msgContainer);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-  } catch (err) {
-    console.error("Error adding chat message:", err);
-  }
-}
-
-function addSystemMessage(message) {
-  const msgContainer = document.createElement("div");
-  msgContainer.classList.add("message", "system");
-  msgContainer.textContent = message;
-  
-  const messagesDiv = document.getElementById("messages");
-  if (messagesDiv) {
-    messagesDiv.appendChild(msgContainer);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  }
-}
-
-function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Debounce utility to avoid spamming the scroll event
-function debounce(fn, wait) {
+export function debounce(fn, wait) {
   let t;
   return function(...args) {
     clearTimeout(t);
@@ -544,191 +181,10 @@ function debounce(fn, wait) {
   };
 }
 
-function sendMessage() {
-  const input = document.getElementById("msg");
-  if (!input) {
-    console.error("Message input not found");
-    return;
-  }
-  
-  const message = input.value.trim();
-  if (message !== "" && currentSocket && currentSocket.readyState === WebSocket.OPEN) {
-    // Use the global currentUser instead of fetching again
-    if (currentUser && currentUser.Username) {
-      const payload = {
-        type: "message",
-        name: currentUser.Username,
-        message: message
-      };
-      console.log("Sending message:", payload);
-      currentSocket.send(JSON.stringify(payload));
-      input.value = "";
-    } else {
-      console.error("Current user not available");
-      addSystemMessage("Failed to send message - user not available");
-    }
-  } else {
-    if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) {
-      addSystemMessage("Connection not ready. Please wait and try again.");
-    }
-  }
-}
+let lastRecentChatsLoad = 0;
+const RECENT_CHATS_COOLDOWN = 5000;
 
-async function loadOnlineUsers() {
-  try {
-    const onlineRes = await fetch("/api/online-users");
-    if (!onlineRes.ok) {
-      throw new Error(`HTTP ${onlineRes.status}`);
-    }
-    const onlineData = await onlineRes.json();
-    const online = onlineData.users || [];
-
-    // Try to get all users; if unavailable, fallback to online-only rendering
-    let allUsers = null;
-    try {
-      const allRes = await fetch("/api/all-users");
-      if (allRes.ok) {
-        const allData = await allRes.json();
-        allUsers = Array.isArray(allData) ? allData : (allData.users || []);
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    if (allUsers && allUsers.length) {
-      renderUserList(allUsers, online);
-    } else {
-      updateOnlineUsers(online);
-    }
-
-    // Load recent chats ONLY if we haven't loaded timestamps yet
-    if (lastMessageTimestamps.size === 0) {
-      await loadRecentChats();
-    }
-  } catch (err) {
-    console.error("Error loading online users:", err);
-    const userList = document.getElementById("userList");
-    if (userList) {
-      userList.innerHTML = `<li><em>Error loading users</em></li>`;
-    }
-  }
-}
-
-function setupWebSocket(targetUser) {
-  if (currentSocket) {
-    intentionalSocketClose = true;
-    currentSocket.close();
-  }
-  
-  const scheme = location.protocol === "https:" ? "wss" : "ws";
-  let socketUrl;
-  if (targetUser) {
-    socketUrl = `${scheme}://${location.host}/room?user1=${encodeURIComponent(currentUser.Username)}&user2=${encodeURIComponent(targetUser)}&username=${encodeURIComponent(currentUser.Username)}`;
-  } else {
-    socketUrl = `${scheme}://${location.host}/room?room=global&username=${encodeURIComponent(currentUser.Username)}`;
-  }
-  currentSocket = new WebSocket(socketUrl);
-
-  currentSocket.onopen = () => {
-    console.log("WebSocket connected");
-    addSystemMessage("Connected to server");
-    
-    if (!targetUser) {
-      stopOnlineUsersRefresh();
-      loadOnlineUsers();
-    }
-  };
-  
-  currentSocket.onclose = () => {
-    console.log("WebSocket disconnected");
-    if (!intentionalSocketClose) {
-      addSystemMessage("Disconnected from server");
-    }
-    intentionalSocketClose = false;
-    if (!targetUser) {
-      startOnlineUsersRefresh();
-    }
-  };
-  
-  currentSocket.onerror = (error) => {
-    console.error("WebSocket error:", error);
-    addSystemMessage("Connection error occurred");
-  };
-  
-  currentSocket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      console.log("WebSocket message received:", data);
-      
-      if (data.type === "users") {
-        if (!targetUser) {
-          loadOnlineUsers();
-        }
-      } else if (data.type === "message") {
-        // Update last message timestamp for the sender OR current user when sending
-        const messageUsername = data.name;
-        const isOwnMessage = messageUsername === (currentUser ? currentUser.Username : "");
-        
-        // If in private chat, track the OTHER person's timestamp when they send
-        if (targetUser && messageUsername === targetUser) {
-          const newTimestamp = Date.now();
-          lastMessageTimestamps.set(messageUsername, newTimestamp);
-          console.log(`Updated timestamp for ${messageUsername}: ${new Date(newTimestamp).toLocaleTimeString()}`);
-        }
-        // If in lobby or receiving a message from someone else, track their timestamp
-        else if (!isOwnMessage) {
-          const newTimestamp = Date.now();
-          lastMessageTimestamps.set(messageUsername, newTimestamp);
-          console.log(`Updated timestamp for ${messageUsername}: ${new Date(newTimestamp).toLocaleTimeString()}`);
-        }
-        // If YOU send a message in private chat, track the recipient's timestamp
-        else if (isOwnMessage && targetUser) {
-          const newTimestamp = Date.now();
-          lastMessageTimestamps.set(targetUser, newTimestamp);
-          console.log(`Updated timestamp for chat partner ${targetUser}: ${new Date(newTimestamp).toLocaleTimeString()}`);
-        }
-        
-        // ALWAYS re-render the user list when a message is received/sent
-        // This ensures sorting updates in real-time even during private chats
-        console.log("Re-rendering user list with new sort order");
-        fetch("/api/online-users")
-          .then(res => res.json())
-          .then(onlineData => {
-            const online = onlineData.users || [];
-            
-            // Check if we have all users
-            return fetch("/api/all-users")
-              .then(allRes => {
-                if (allRes.ok) {
-                  return allRes.json().then(allData => {
-                    const allUsers = Array.isArray(allData) ? allData : (allData.users || []);
-                    if (allUsers && allUsers.length) {
-                      renderUserList(allUsers, online);
-                    } else {
-                      updateOnlineUsers(online);
-                    }
-                  });
-                } else {
-                  updateOnlineUsers(online);
-                }
-              });
-          })
-          .catch(err => console.error("Error refreshing user list:", err));
-        
-        addChatMessage(data.name, data.message);
-      } else if (data.type === "user_joined" || data.type === "user_left") {
-        if (!targetUser) {
-          loadOnlineUsers();
-        }
-      }
-    } catch (err) {
-      console.error("Invalid JSON received:", event.data);
-    }
-  };
-}
-
-async function loadRecentChats() {
-  // Rate limiting: only load recent chats every 5 seconds
+export async function loadRecentChats() {
   const now = Date.now();
   if (now - lastRecentChatsLoad < RECENT_CHATS_COOLDOWN) {
     return;
@@ -738,7 +194,6 @@ async function loadRecentChats() {
   try {
     const response = await fetch("/api/recent-chats");
     
-    // Check if the endpoint exists
     if (response.status === 404) {
       console.log("Recent chats endpoint not available yet");
       return;
@@ -748,7 +203,6 @@ async function loadRecentChats() {
       throw new Error(`HTTP ${response.status}`);
     }
     
-    // Check if response is JSON
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       console.log("Recent chats endpoint not returning JSON yet");
@@ -764,7 +218,6 @@ async function loadRecentChats() {
         return;
       }
       
-      // Add recent chats section
       const recentHeader = document.createElement("li");
       recentHeader.innerHTML = "<strong>Recent Chats:</strong>";
       recentHeader.className = "chat-header";
@@ -775,7 +228,6 @@ async function loadRecentChats() {
         li.className = "recent-chat-user";
         li.setAttribute("data-username", chat.username);
         
-        // Build content safely using DOM APIs
         const dot = document.createElement("span");
         dot.className = "chat-dot";
         li.appendChild(dot);
@@ -798,14 +250,12 @@ async function loadRecentChats() {
         
         li.addEventListener("click", async () => {
           try {
-            // Close current socket if exists
             if (currentSocket) {
-              intentionalSocketClose = true;
+              setIntentionalSocketClose(true);
               currentSocket.close();
-              currentSocket = null;
+              setCurrentSocket(null);
             }
             
-            // Setup private chat with clicked user
             await setupPrivateChat(chat.username);
           } catch (err) {
             console.error("Error setting up private chat:", err);
@@ -818,196 +268,55 @@ async function loadRecentChats() {
     }
   } catch (err) {
     console.error("Error loading recent chats:", err);
-    // Don't show error to user since this is an optional feature
-  }
-}
-let onlineUsersRefreshInterval = null;
-let lastRecentChatsLoad = 0;
-const RECENT_CHATS_COOLDOWN = 5000; // 5 seconds
-
-function startOnlineUsersRefresh() {
-  // Clear existing interval
-  if (onlineUsersRefreshInterval) {
-    clearInterval(onlineUsersRefreshInterval);
-  }
-  
-  // Refresh online users every 30 seconds as fallback
-  onlineUsersRefreshInterval = setInterval(() => {
-    if (!currentChatUser) { // Only refresh if we're in the user selection view
-      loadOnlineUsers();
-    }
-  }, 30000);
-}
-
-function stopOnlineUsersRefresh() {
-  if (onlineUsersRefreshInterval) {
-    clearInterval(onlineUsersRefreshInterval);
-    onlineUsersRefreshInterval = null;
-  }
-}
-async function initializeMessageTimestamps() {
-  if (!currentUser) {
-    console.log("No current user, skipping timestamp initialization");
-    return;
-  }
-  
-  console.log("Initializing message timestamps for user:", currentUser.Username);
-  
-  try {
-    // Use the existing recent-chats endpoint to populate initial timestamps
-    const response = await fetch('/api/recent-chats');
-    if (response.ok) {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        if (data.recent_chats && data.recent_chats.length > 0) {
-          console.log("Loading initial timestamps from recent chats:", data.recent_chats.length, "users");
-          data.recent_chats.forEach(chat => {
-            if (chat.username && chat.last_message_time) {
-              const timestamp = new Date(chat.last_message_time).getTime();
-              lastMessageTimestamps.set(chat.username, timestamp);
-              console.log(`Set timestamp for ${chat.username}: ${new Date(timestamp).toLocaleString()}`);
-            }
-          });
-          console.log("Total timestamps loaded:", lastMessageTimestamps.size);
-        } else {
-          console.log("No recent chats found");
-        }
-      }
-    } else {
-      console.log("Recent chats endpoint returned status:", response.status);
-    }
-  } catch (err) {
-    console.log("Could not load initial message timestamps, using real-time tracking only:", err);
   }
 }
 
 function addChatStyles() {
-  // Remove existing chat styles
-  const existingStyle = document.querySelector('style[data-chat-styles]');
-  if (existingStyle) {
-    existingStyle.remove();
+  if (document.querySelector('style[data-chat-styles]')) {
+    return;
   }
   
-  const styles = `
+  const style = document.createElement('style');
+  style.setAttribute('data-chat-styles', 'true');
+  style.textContent = `
     .chat-container {
       display: flex;
       height: 100vh;
-      font-family: Arial, sans-serif;
+      width: 100%;
     }
-    
     .chat-main {
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: #f5f5f5;
     }
-    
     .chat-header {
+      padding: 1rem;
       background: #2c3e50;
       color: white;
-      padding: 1rem;
+      border-bottom: 1px solid #ddd;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    
-    .chat-header h2 {
-      margin: 0;
-    }
-    
-    .back-btn {
-      background: #3498db;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    
-    .back-btn:hover {
-      background: #2980b9;
-    }
-    
     .chat-messages {
       flex: 1;
       overflow-y: auto;
       padding: 1rem;
       background: white;
     }
-    
-    .load-more-btn {
-      background: #3498db;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin: 10px auto;
-      display: block;
-      transition: background 0.3s;
-    }
-    
-    .load-more-btn:hover {
-      background: #2980b9;
-    }
-    
-    .message-container {
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      border-radius: 8px;
-      background: #ecf0f1;
-      max-width: 70%;
-    }
-    
-    .message-container.own-message {
-      margin-left: auto;
-      background: #3498db;
-      color: white;
-    }
-    
-    .username {
-      font-weight: bold;
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-    }
-    
-    .message {
-      word-wrap: break-word;
-    }
-    
-    .timestamp {
-      font-size: 0.8rem;
-      opacity: 0.7;
-      margin-top: 0.25rem;
-    }
-    
-    .message.system {
-      background: #f39c12;
-      color: white;
-      text-align: center;
-      border-radius: 4px;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      max-width: 100%;
-    }
-    
     .chat-input {
       display: flex;
       padding: 1rem;
-      background: white;
       border-top: 1px solid #ddd;
+      gap: 0.5rem;
+      background: white;
     }
-    
     .chat-input input {
       flex: 1;
       padding: 0.75rem;
       border: 1px solid #ddd;
       border-radius: 4px;
-      margin-right: 0.5rem;
     }
-    
     .chat-input button {
       background: #27ae60;
       color: white;
@@ -1015,136 +324,33 @@ function addChatStyles() {
       padding: 0.75rem 1.5rem;
       border-radius: 4px;
       cursor: pointer;
-      transition: background 0.3s;
     }
-    
-    .chat-input button:hover {
-      background: #229954;
-    }
-    
     .chat-sidebar {
       width: 300px;
       background: #34495e;
       color: white;
+      border-left: 2px solid #2c3e50;
       padding: 1rem;
       overflow-y: auto;
     }
-    
-    .chat-sidebar h3 {
-      margin-top: 0;
-      text-align: center;
-      border-bottom: 1px solid #5d6d7e;
-      padding-bottom: 0.5rem;
-    }
-    
-    .user-list {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .user-list li {
+    .message-container {
+      margin-bottom: 1rem;
       padding: 0.5rem;
-      margin: 0.25rem 0;
-      border-radius: 4px;
-      background: #2c3e50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: background 0.3s;
+      border-radius: 8px;
+      background: #ecf0f1;
+      max-width: 70%;
     }
-    
-    .user-list li:hover {
-      background: #1abc9c;
-    }
-    
-    .user-list li.chat-header {
-      background: #34495e;
-      cursor: default;
-      margin-top: 1rem;
-    }
-    
-    .user-list li.chat-header:hover {
-      background: #34495e;
-    }
-    
-    .status-dot, .chat-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-      background: #95a5a6; /* neutral by default */
-    }
-
-    .status-dot.online { background: #27ae60; }
-    .status-dot.offline { background: #e74c3c; }
-    
-    .chat-dot {
-      background: #e74c3c;
-    }
-    
-    .unread-badge {
-      background: #e74c3c;
+    .message-container.own-message {
+      margin-left: auto;
+      background: #3498db;
       color: white;
-      border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 0.7rem;
-      margin-left: auto;
-      min-width: 16px;
-      text-align: center;
-    }
-    
-    .last-message-time {
-      display: block;
-      opacity: 0.7;
-      font-size: 0.7rem;
-      margin-left: 0.5rem;
-    }
-    
-    .last-message-indicator {
-      margin-left: auto;
-      opacity: 0.7;
-      font-size: 0.7rem;
-      color: #bdc3c7;
-      margin-left: 0.5rem;
-    }
-    
-    .recent-chat-user {
-      flex-direction: column;
-      align-items: flex-start !important;
-    }
-    
-    .recent-chat-user > div:first-child {
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-    
-    @media (max-width: 768px) {
-      .chat-container {
-        flex-direction: column;
-      }
-      
-      .chat-sidebar {
-        width: 100%;
-        height: auto;
-        max-height: 200px;
-        overflow-y: auto;
-      }
-      
-      .message-container {
-        max-width: 90%;
-      }
+      text-align: right;
     }
   `;
-  
-  const styleSheet = document.createElement("style");
-  styleSheet.setAttribute('data-chat-styles', 'true');
-  styleSheet.textContent = styles;
-  document.head.appendChild(styleSheet);
+  document.head.appendChild(style);
 }
+
 export async function loadChatUI(targetUser = null) {
-  // Prepare layout: hide forum pieces and remove any existing chat container !!
   const elementsToHide = [
     ".main-content",
     ".pagination",
@@ -1156,24 +362,23 @@ export async function loadChatUI(targetUser = null) {
     const element = document.querySelector(selector);
     if (element) element.style.display = "none";
   });
+  
   const prevChat = document.querySelector('.chat-container');
   if (prevChat) prevChat.remove();
 
-  // Chat container + sidebar
   const chatContainer = document.createElement("div");
   chatContainer.className = "chat-container";
-  chatContainer.id = "chat-container"
+  chatContainer.id = "chat-container";
 
   const chatMain = document.createElement("div");
   chatMain.className = "chat-main";
   chatMain.innerHTML = `
     <div class="chat-header">
       <h2 id="chatTitle">Real-Time Forum Chat</h2>
-      <button id="Logo" class="back-btn">← Back to Forum</button>
-      <button id="Out" class="back-btn" >← Logout </button>
+      <button id="backToForum" class="back-btn">← Back to Forum</button>
     </div>
     <div id="messages" class="chat-messages">
-      <div class="message system">Welcome to the chat! 🎉</div>
+      <div class="message system">Welcome to the chat!</div>
       <div id="loadMoreBtn" class="load-more-btn" style="display: none;">Load More Messages</div>
     </div>
     <div class="chat-input" ${targetUser ? '' : 'style="display: none;"'}>
@@ -1186,7 +391,10 @@ export async function loadChatUI(targetUser = null) {
   chatSidebar.className = "chat-sidebar";
   chatSidebar.innerHTML = `
     <h3>Users</h3>
-    <ul class="user-list" id="userList"></ul>
+    <ul class="user-list" id="userList">
+      <li class="chat-header"><strong>Connected:</strong></li>
+      <li><em>Loading users...</em></li>
+    </ul>
   `;
 
   chatContainer.append(chatMain, chatSidebar);
@@ -1194,9 +402,7 @@ export async function loadChatUI(targetUser = null) {
 
   addChatStyles();
 
-  // ======= Fetch current user =======
-  // Set the global currentUser variable
-  currentUser = { Username: "Anonymous" }; // Default value
+  let user = { Username: "Anonymous" };
   try {
     const res = await fetch("/api/me");
     const data = await res.json();
@@ -1207,31 +413,23 @@ export async function loadChatUI(targetUser = null) {
       authenticated: Boolean(data.authenticated ?? data.Authenticated)
     };
     if (normalized.authenticated) {
-      currentUser = { Username: normalized.Username, Initial: normalized.Initial, ID: normalized.ID };
+      user = { Username: normalized.Username, Initial: normalized.Initial, ID: normalized.ID };
     }
   } catch (err) {
     console.error("Error fetching user state:", err);
   }
+  
+  setCurrentUser(user);
 
-  // Initialize message timestamps BEFORE loading users
   await initializeMessageTimestamps();
-
-  // Set up event listeners first
   setupEventListeners();
 
-  // If we're not in a private chat, start the refresh interval
-  if (!targetUser) {
-    startOnlineUsersRefresh();
-  }
-
-  // If targetUser is specified, set up private chat
   if (targetUser) {
     await setupPrivateChat(targetUser);
   } else {
-    // Load online users for selection
-    await loadOnlineUsers();
-    // Open lobby websocket to receive real-time presence updates
     setupWebSocket(null);
+    await loadOnlineUsers();
+    startOnlineUsersRefresh();
   }
 
   if (targetUser) {
@@ -1239,14 +437,3 @@ export async function loadChatUI(targetUser = null) {
     if (msgInput) msgInput.focus();
   }
 }
-
-
-function debugTimestamps() {
-  console.log("=== Current Timestamps ===");
-  lastMessageTimestamps.forEach((timestamp, username) => {
-    console.log(`${username}: ${new Date(timestamp).toLocaleString()}`);
-  });
-  console.log("========================");
-}
-
-window.debugTimestamps = debugTimestamps;

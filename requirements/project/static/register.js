@@ -1,7 +1,9 @@
 import { showPage } from "./main.js";
 
+import { destroyFloatingChatIsland } from "./ChatIsland.js";
+
 export async function registerBuilding(user) {
-  // inject css if not already
+  destroyFloatingChatIsland();
   if (!document.querySelector('link[href*="forms.css"]')) {
     const formsCSS = document.createElement('link');
     formsCSS.id = "cssl9dim";

@@ -75,7 +75,7 @@ func forumMux() *http.ServeMux {
 	
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 	// WebSocket endpoint for private chat (protected)
-	forumux.HandleFunc("/room", middleware.AuthMidleware(hub.ServeWs))
+	forumux.HandleFunc("/room", hub.ServeWs)
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
 	return forumux
 }
