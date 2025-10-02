@@ -194,8 +194,8 @@ export function setupWebSocket(targetUser) {
     console.log("WebSocket message received:", data);
 
     try {
-      // Handle user list updates - IMMEDIATE
-      if (data.type === "users" && !targetUser) {
+      // Handle user list updates - ALWAYS (even in private chat)
+      if (data.type === "users") {
         console.log("Updating online users immediately:", data.list);
         updateOnlineUsers(data.list || []);
         return;
@@ -241,8 +241,8 @@ export function setupWebSocket(targetUser) {
         return;
       }
 
-      // Handle user joined/left - IMMEDIATE UPDATE
-      if ((data.type === "user_joined" || data.type === "user_left") && !targetUser) {
+      // Handle user joined/left - ALWAYS UPDATE (even in private chat)
+      if (data.type === "user_joined" || data.type === "user_left") {
         console.log(`User ${data.type}:`, data.username);
         loadOnlineUsers();
         return;

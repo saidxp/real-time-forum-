@@ -33,9 +33,35 @@ func NewHub() *Hub {
 // run handles global user events and broadcasts
 func (h *Hub) run() {
 	for {
-		// Broadcast user list every 2 seconds for real-time updates
-		time.Sleep(2 * time.Second)
+		// Broadcast user list every 3 seconds for real-time updates
+		time.Sleep(3 * time.Second)
 		h.broadcastGlobalUsers()
+		// Also broadcast to all rooms (including private chats)
+		h.broadcastUsersToAllRooms()
+	}
+}
+
+// broadcastUsersToAllRooms sends user list to all rooms including private chats
+func (h *Hub) broadcastUsersToAllRooms() {
+	var names []string
+	for name := range h.globalUsers {
+		names = append(names, name)
+	}
+
+	payload, _ := json.Marshal(map[string]interface{}{
+		"type": "users",
+		"list": names,
+	})
+
+	// Send to all rooms
+	for _, room := range h.Rooms {
+		for user := range room.users {
+			select {
+			case user.recieve <- payload:
+			default:
+				// User channel full, skip
+			}
+		}
 	}
 }
 
