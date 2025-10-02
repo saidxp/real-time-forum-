@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	db "forum/internal/db"
 	"log"
 	"net/http"
+	 
 
 	"github.com/gorilla/websocket"
 )
@@ -15,7 +17,9 @@ type user struct {
 	recieve chan []byte
 	room    *room
 	userID  int
+	 
 }
+
 
 func (c *user) read() {
 	defer func() {
@@ -26,9 +30,12 @@ func (c *user) read() {
 			c.socket.Close()
 		}
 	}()
-
+	// struct of message and type
+	 
 	for {
 		_, msg, err := c.socket.ReadMessage()
+		// her i will add check for message !! \\
+		fmt.Println(string(msg))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("WebSocket error for user %s: %v", c.name, err)
@@ -64,13 +71,49 @@ func (c *user) write() {
 			return
 		}
 
-		err := c.socket.WriteMessage(websocket.TextMessage, msg)
-		if err != nil {
+		var chatMsg ChatMessageData
+		if err := json.Unmarshal(msg, &chatMsg); err != nil {
+			log.Printf("Failed to parse message JSON: %v", err)
+			continue
+		}
+
+		var outgoing []byte
+		var err error
+
+		switch chatMsg.Type {
+		case "message":
+			 
+			outgoing, err = json.Marshal(chatMsg)
+			if err != nil {
+				log.Printf("Failed to marshal message: %v", err)
+				continue
+			}
+
+		case "typing":
+	 
+			if c.name != chatMsg.Name {
+				outgoing, err = json.Marshal(chatMsg)
+				if err != nil {
+					log.Printf("Failed to marshal typing message: %v", err)
+					continue
+				}
+			} else {
+		 
+				continue
+			}
+
+		default:
+			// unknown type, skip
+			continue
+		}
+
+		// finally, write to the websocket
+		if err := c.socket.WriteMessage(websocket.TextMessage, outgoing); err != nil {
 			log.Printf("Write error for user %s: %v", c.name, err)
 			return
 		}
 
-		log.Printf("Message sent to %s: %s", c.name, string(msg))
+		log.Printf("Message sent to %s: %s", c.name, string(outgoing))
 	}
 }
 
@@ -88,7 +131,8 @@ func GetLastMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUserID, hasSession, err := db.SelectUserSession(sessionCookie.Value)
-	if err != nil || !hasSession {
+	if err != nil || !hasSession {				log.Printf("Room channel full, message dropped")
+
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}

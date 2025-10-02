@@ -204,6 +204,7 @@ window.onload = async () => {
   setupGlobalListeners(user);
 
 };
+
 function loadchatpart(){
   const users = document.createElement(".chat-ui .contact");
 const slideOff = document.createElement(".upper");

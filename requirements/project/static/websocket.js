@@ -1,5 +1,5 @@
-import { 
-  setCurrentSocket, 
+import {
+  setCurrentSocket,
   setIntentionalSocketClose,
   currentSocket,
   currentUser,
@@ -16,7 +16,7 @@ import { updateUserNotificationBadge, loadChatUI } from "./chatui.js";
 let cachedOnMessageReceived = null;
 import('./users.js').then(module => {
   cachedOnMessageReceived = module.onMessageReceived;
-}).catch(() => {});
+}).catch(() => { });
 
 function showBrowserNotification(username, message) {
   if ('Notification' in window && Notification.permission === 'granted') {
@@ -44,21 +44,21 @@ function showInAppNotification(username, message) {
       <div class="chat-notification-message">${escapeHtml(message.substring(0, 100))}</div>
     </div>
   `;
-  
+
   document.body.appendChild(notification);
-  
+
   const closeBtn = notification.querySelector('.chat-notification-close');
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     notification.classList.add('fade-out');
     setTimeout(() => notification.remove(), 300);
   });
-  
+
   notification.addEventListener('click', () => {
     loadChatUI(username);
     notification.remove();
   });
-  
+
   setTimeout(() => {
     notification.classList.add('fade-out');
     setTimeout(() => notification.remove(), 300);
@@ -137,18 +137,18 @@ export function setupWebSocket(targetUser) {
 
   socket.onclose = (event) => {
     console.log("WebSocket disconnected", event.code, event.reason);
-    
+
     if (!intentionalSocketClose) {
       addSystemMessage("Disconnected from server");
-      
+
       // Attempt to reconnect if not intentional
       if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts++;
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
         console.log(`Attempting reconnect ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms...`);
-        
-        addSystemMessage(`Reconnecting in ${delay/1000}s... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-        
+
+        addSystemMessage(`Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
         reconnectTimeout = setTimeout(() => {
           setupWebSocket(targetUser);
         }, delay);
@@ -156,7 +156,7 @@ export function setupWebSocket(targetUser) {
         addSystemMessage("Connection failed. Please refresh the page to reconnect.");
       }
     }
-    
+
     setIntentionalSocketClose(false);
 
     if (!targetUser) {
@@ -166,7 +166,7 @@ export function setupWebSocket(targetUser) {
 
   socket.onerror = (error) => {
     console.error("WebSocket error:", error);
-    
+
     // More detailed error message based on readyState
     if (socket.readyState === WebSocket.CONNECTING) {
       console.error("Connection failed - server may not be running or wrong URL");
@@ -200,55 +200,64 @@ export function setupWebSocket(targetUser) {
         updateOnlineUsers(data.list || []);
         return;
       }
-
+      if (data.type === "typing") {
+        const typingDiv = document.getElementById("typing-indicator");
+        if (typingDiv) {
+          typingDiv.textContent = `${data.to} is typing...`;
+          setTimeout(() => {
+            typingDiv.textContent = "";
+          }, 3000);
+        }
+      }
       if (data.type === "message") {
-        const messageUsername = data.name;
-        const isOwnMessage = currentUser && messageUsername === currentUser.Username;
-        const currentChatUser = window.currentChatUser || null;
+      console.log("chat is her hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+      const messageUsername = data.name;
+      const isOwnMessage = currentUser && messageUsername === currentUser.Username;
+      const currentChatUser = window.currentChatUser || null;
 
-        // CRITICAL: Update timestamp FIRST, BEFORE anything else
-        if (!isOwnMessage) {
-          updateLastMessageTimestamp(messageUsername, Date.now());
-        } else if (isOwnMessage && targetUser) {
-          updateLastMessageTimestamp(targetUser, Date.now());
-        }
-
-        // INSTANT re-sort - synchronous, no await
-        if (!targetUser && !isOwnMessage && cachedOnMessageReceived) {
-          cachedOnMessageReceived(messageUsername);
-        }
-
-        // Handle unread messages and notifications
-        if (!isOwnMessage && currentChatUser !== messageUsername) {
-          incrementUnreadMessages(messageUsername);
-          const currentUnread = window.unreadMessages?.get(messageUsername) || 0;
-          updateUserNotificationBadge(messageUsername, currentUnread);
-
-          // Update floating island (async, non-blocking)
-          import('./ChatIsland.js').then(({ incrementUnreadCount, updateFloatingIsland }) => {
-            incrementUnreadCount(messageUsername);
-            const onUserSelect = (username) => loadChatUI(username);
-            updateFloatingIsland(onUserSelect);
-          }).catch(err => console.log("ChatIsland not available:", err));
-
-          showBrowserNotification(messageUsername, data.message);
-          showInAppNotification(messageUsername, data.message);
-          playNotificationSound();
-        }
-
-        // Add message to chat UI last
-        addChatMessage(data.name, data.message);
-        return;
+      // CRITICAL: Update timestamp FIRST, BEFORE anything else
+      if (!isOwnMessage) {
+        updateLastMessageTimestamp(messageUsername, Date.now());
+      } else if (isOwnMessage && targetUser) {
+        updateLastMessageTimestamp(targetUser, Date.now());
       }
 
-      // Handle user joined/left - IMMEDIATE UPDATE
-      if ((data.type === "user_joined" || data.type === "user_left") && !targetUser) {
-        console.log(`User ${data.type}:`, data.name);
-        await loadOnlineUsers();
-        return;
+      // INSTANT re-sort - synchronous, no await
+      if (!targetUser && !isOwnMessage && cachedOnMessageReceived) {
+        cachedOnMessageReceived(messageUsername);
       }
-    } catch (err) {
-      console.error("Error processing WebSocket message:", err);
+
+      // Handle unread messages and notifications
+      if (!isOwnMessage && currentChatUser !== messageUsername) {
+        incrementUnreadMessages(messageUsername);
+        const currentUnread = window.unreadMessages?.get(messageUsername) || 0;
+        updateUserNotificationBadge(messageUsername, currentUnread);
+
+        // Update floating island (async, non-blocking)
+        import('./ChatIsland.js').then(({ incrementUnreadCount, updateFloatingIsland }) => {
+          incrementUnreadCount(messageUsername);
+          const onUserSelect = (username) => loadChatUI(username);
+          updateFloatingIsland(onUserSelect);
+        }).catch(err => console.log("ChatIsland not available:", err));
+
+        showBrowserNotification(messageUsername, data.message);
+        showInAppNotification(messageUsername, data.message);
+        playNotificationSound();
+      }
+      // Add message to chat UI last
+      addChatMessage(data.name, data.message);
+      return;
     }
-  };
+
+    // Handle user joined/left - IMMEDIATE UPDATE
+    if ((data.type === "user_joined" || data.type === "user_left") && !targetUser) {
+      console.log(`User ${data.type}:`, data.name);
+      await loadOnlineUsers();
+      return;
+    }
+
+  } catch (err) {
+    console.error("Error processing WebSocket message:", err);
+  }
+};
 }

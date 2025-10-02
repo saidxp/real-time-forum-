@@ -1,5 +1,5 @@
-import { 
-  setCurrentUser, 
+import {
+  setCurrentUser,
   setCurrentChatUserID,
   setCurrentChatUser,
   setIntentionalSocketClose,
@@ -7,7 +7,7 @@ import {
   setMessagesLoaded,
   setHasMoreMessages,
   currentChatUserID,
-  isLoadingMessages, 
+  isLoadingMessages,
   hasMoreMessages,
   currentSocket,
   setCurrentSocket,
@@ -33,7 +33,7 @@ export async function loadCurrentUser() {
   }
 }
 
-// Call this only once on module load
+// Call This Only once on module load ?? >>>
 loadCurrentUser();
 
 export function updateUserNotificationBadge(username, count) {
@@ -63,6 +63,11 @@ export function setupEventListeners() {
   const msgInput = document.getElementById("msg");
   if (msgInput) {
     msgInput.addEventListener("keydown", (event) => {
+      //  her i will check if the user is typing !
+      console.log("typing")
+      console.log(currentChatUserID)
+      if (!currentSocket) return;
+      currentSocket.send(JSON.stringify({ type: "typing", to: currentChatUser }));
       if (event.key === "Enter") {
         event.preventDefault();
         sendMessage();
@@ -71,28 +76,28 @@ export function setupEventListeners() {
   }
 
   const backBtn = document.getElementById("backToForum");
-if (backBtn) {
-  backBtn.addEventListener("click", async () => {
-    if (currentSocket) {
-      setIntentionalSocketClose(true);
-      currentSocket.close();
-      setCurrentSocket(null);
-    }
-    setCurrentChatUser(null);
-    window.currentChatUser = null;
-      
+  if (backBtn) {
+    backBtn.addEventListener("click", async () => {
+      if (currentSocket) {
+        setIntentionalSocketClose(true);
+        currentSocket.close();
+        setCurrentSocket(null);
+      }
+      setCurrentChatUser(null);
+      window.currentChatUser = null;
+
       const chatContainer = document.querySelector('.chat-container');
       if (chatContainer) chatContainer.remove();
       const chatStyles = document.querySelector('style[data-chat-styles]');
       if (chatStyles) chatStyles.remove();
-      
+
       [".main-content", ".pagination", ".footer"].forEach(sel => {
         const el = document.querySelector(sel);
         if (el) el.style.display = "";
       });
-      
+
       startOnlineUsersRefresh();
-      
+
       try {
         const { showPage } = await import("./main.js");
         const res = await fetch("/api/me");
@@ -122,22 +127,20 @@ if (backBtn) {
 }
 
 export async function setupPrivateChat(targetUser) {
- stopOnlineUsersRefresh();
-  
+  stopOnlineUsersRefresh();
   if (unreadMessages.has(targetUser)) {
     clearUnreadMessages(targetUser);
     updateUserNotificationBadge(targetUser, 0);
   }
-  
   // Set globally for websocket access
   setCurrentChatUser(targetUser);
-  window.currentChatUser = targetUser;  // ADD THIS LINE
-  
+  window.currentChatUser = targetUser;
+
   const chatTitle = document.getElementById("chatTitle");
   if (chatTitle) {
     chatTitle.textContent = `Chat with ${targetUser}`;
   }
-  
+
   try {
     const response = await fetch(`/api/user-by-username?username=${encodeURIComponent(targetUser)}`);
     if (!response.ok) {
@@ -153,7 +156,7 @@ export async function setupPrivateChat(targetUser) {
 
   setMessagesLoaded(0);
   setHasMoreMessages(true);
-  
+
   const messagesDiv = document.getElementById("messages");
   if (messagesDiv) {
     const systemMessages = messagesDiv.querySelectorAll(".message.system");
@@ -166,7 +169,7 @@ export async function setupPrivateChat(targetUser) {
   }
 
   setupWebSocket(targetUser);
-  
+
   const chatInput = document.querySelector(".chat-input");
   if (chatInput) {
     chatInput.style.display = "flex";
@@ -175,7 +178,7 @@ export async function setupPrivateChat(targetUser) {
 
 export function debounce(fn, wait) {
   let t;
-  return function(...args) {
+  return function (...args) {
     clearTimeout(t);
     t = setTimeout(() => fn.apply(this, args), wait);
   };
@@ -185,56 +188,57 @@ let lastRecentChatsLoad = 0;
 const RECENT_CHATS_COOLDOWN = 5000;
 
 export async function loadRecentChats() {
+
   const now = Date.now();
   if (now - lastRecentChatsLoad < RECENT_CHATS_COOLDOWN) {
     return;
   }
   lastRecentChatsLoad = now;
-  
+
   try {
     const response = await fetch("/api/recent-chats");
-    
+
     if (response.status === 404) {
       console.log("Recent chats endpoint not available yet");
       return;
     }
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       console.log("Recent chats endpoint not returning JSON yet");
       return;
     }
-    
+
     const data = await response.json();
-    
+
     if (data.recent_chats && data.recent_chats.length > 0) {
       const userList = document.getElementById("userList");
       if (!userList) {
         console.error("User list element not found");
         return;
       }
-      
+
       const recentHeader = document.createElement("li");
       recentHeader.innerHTML = "<strong>Recent Chats:</strong>";
       recentHeader.className = "chat-header";
       userList.appendChild(recentHeader);
-      
+
       data.recent_chats.forEach((chat) => {
         const li = document.createElement("li");
         li.className = "recent-chat-user";
         li.setAttribute("data-username", chat.username);
-        
+
         const dot = document.createElement("span");
         dot.className = "chat-dot";
         li.appendChild(dot);
-        
+
         const nameNode = document.createTextNode(chat.username || "");
         li.appendChild(nameNode);
-        
+
         const unreadCount = Number(chat.unread_count) || 0;
         if (unreadCount > 0) {
           const badge = document.createElement("span");
@@ -242,12 +246,12 @@ export async function loadRecentChats() {
           badge.textContent = String(unreadCount);
           li.appendChild(badge);
         }
-        
+
         const timeEl = document.createElement("small");
         timeEl.className = "last-message-time";
         timeEl.textContent = new Date(chat.last_message_time).toLocaleDateString();
         li.appendChild(timeEl);
-        
+
         li.addEventListener("click", async () => {
           try {
             if (currentSocket) {
@@ -255,14 +259,14 @@ export async function loadRecentChats() {
               currentSocket.close();
               setCurrentSocket(null);
             }
-            
+
             await setupPrivateChat(chat.username);
           } catch (err) {
             console.error("Error setting up private chat:", err);
             addSystemMessage("Failed to start chat with " + chat.username);
           }
         });
-        
+
         userList.appendChild(li);
       });
     }
@@ -275,7 +279,7 @@ function addChatStyles() {
   if (document.querySelector('style[data-chat-styles]')) {
     return;
   }
-  
+
   const style = document.createElement('style');
   style.setAttribute('data-chat-styles', 'true');
   style.textContent = `
@@ -351,6 +355,7 @@ function addChatStyles() {
 }
 
 export async function loadChatUI(targetUser = null) {
+
   const elementsToHide = [
     ".main-content",
     ".pagination",
@@ -362,7 +367,7 @@ export async function loadChatUI(targetUser = null) {
     const element = document.querySelector(selector);
     if (element) element.style.display = "none";
   });
-  
+
   const prevChat = document.querySelector('.chat-container');
   if (prevChat) prevChat.remove();
 
@@ -381,6 +386,7 @@ export async function loadChatUI(targetUser = null) {
       <div class="message system">Welcome to the chat!</div>
       <div id="loadMoreBtn" class="load-more-btn" style="display: none;">Load More Messages</div>
     </div>
+      <div id="typing-indicator" style="color: gray; font-style: italic; margin: 5px 10px;"></div>
     <div class="chat-input" ${targetUser ? '' : 'style="display: none;"'}>
       <input id="msg" type="text" placeholder="Type a message..." />
       <button id="sendBtn">Send</button>
@@ -418,7 +424,7 @@ export async function loadChatUI(targetUser = null) {
   } catch (err) {
     console.error("Error fetching user state:", err);
   }
-  
+
   setCurrentUser(user);
 
   await initializeMessageTimestamps();

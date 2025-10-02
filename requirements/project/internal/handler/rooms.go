@@ -82,8 +82,8 @@ type room struct {
 	join    chan *user
 	leave   chan *user
 	forward chan []byte
-	name    string // Store room name
-}
+	name    string  
+ }
 
 // Create a new Room with name
 func NewRoom(name string) *room {
@@ -124,6 +124,7 @@ func (r *room) Run() {
 		case msg := <-r.forward:
 			// Parse the message to save to database if it's a private chat
 			var chatMsg ChatMessageData
+			// Her I Will See How I Can Do With This To Handle !!!... 
 			if err := json.Unmarshal(msg, &chatMsg); err == nil {
 				log.Printf("Processing message in room %s: %+v", r.name, chatMsg)
 
@@ -198,7 +199,7 @@ func (r *room) broadcastUsers() {
 		"type": "users",
 		"list": names,
 	})
-
+	
 	for u := range r.users {
 		select {
 		case u.recieve <- payload:
@@ -235,7 +236,7 @@ func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
 	log.Printf("WebSocket connection request - Room: %s, User1: %s, User2: %s, Current: %s",
 		roomName, user1, user2, currentUser)
 
-	// Get current user ID for database operations
+	// Get Current User ID For Database Operations
 	var currentUserID int
 	if sessionCookie, err := req.Cookie("session_token"); err == nil {
 		if userID, hasSession, err := db.SelectUserSession(sessionCookie.Value); err == nil && hasSession {
