@@ -1,284 +1,209 @@
-import { unreadMessages, lastMessageTimestamps, currentUser, currentSocket, setOnlineUsersRefreshInterval, clearOnlineUsersRefreshInterval, setIntentionalSocketClose, setCurrentSocket } from "./chatState.js";
-import { setupPrivateChat, loadRecentChats } from "./chatui.js";
-import { addSystemMessage } from "./messages.js";
+import {
+  lastMessageTimestamps,
+  unreadMessages,
+  setOnlineUsersRefreshInterval,
+  clearOnlineUsersRefreshInterval,
+  refreshAllTimestampsInDOM
+} from "./chatState.js";
+import { loadChatUI } from "./chatui.js";
 
-let lastAllUsersFetch = 0;
-let cachedAllUsers = null;
-let cachedOnlineUsers = []; // Cache online users list
+let sortPending = false;
+let sortTimeout = null;
 
-async function fetchAllUsersThrottled() {
-  const now = Date.now();
-  if (now - lastAllUsersFetch < 60000 && cachedAllUsers) {
-    return cachedAllUsers;
+// OPTIMIZED: Batch sorting to avoid excessive re-renders
+export function triggerUserListSort() {
+  if (sortPending) return;
+  
+  sortPending = true;
+  
+  // Cancel any pending sort
+  if (sortTimeout) {
+    clearTimeout(sortTimeout);
   }
-  lastAllUsersFetch = now;
-
-  try {
-    const res = await fetch("/api/all-users");
-    if (res.ok) {
-      const data = await res.json();
-      cachedAllUsers = Array.isArray(data) ? data : data.users || [];
-      return cachedAllUsers;
-    }
-  } catch (err) {
-    console.error("Error fetching all users:", err);
-  }
-  return cachedAllUsers || null;
+  
+  // Use requestAnimationFrame for smooth UI updates
+  sortTimeout = setTimeout(() => {
+    requestAnimationFrame(() => {
+      sortUserList();
+      sortPending = false;
+    });
+  }, 50); // Small delay to batch multiple updates
 }
 
-let isRendering = false;
-let renderQueue = null;
+// OPTIMIZED: Faster sorting algorithm
+function sortUserList() {
+  const userList = document.getElementById("userList");
+  if (!userList) return;
 
-function sortUsersByLastMessage(users) {
-  return users.sort((a, b) => {
-    const timestampA = lastMessageTimestamps.get(a) || 0;
-    const timestampB = lastMessageTimestamps.get(b) || 0;
+  const items = Array.from(userList.querySelectorAll(".online-user, .recent-chat-user"));
+  if (items.length === 0) return;
+
+  console.log("Sorting user list with", items.length, "users");
+
+  // Sort by timestamp (most recent first)
+  items.sort((a, b) => {
+    const usernameA = a.getAttribute("data-username");
+    const usernameB = b.getAttribute("data-username");
     
-    // Both have timestamps - sort by most recent
-    if (timestampA && timestampB) {
-      return timestampB - timestampA;
-    }
-    // Only A has timestamp - A comes first
-    if (timestampA && !timestampB) return -1;
-    // Only B has timestamp - B comes first
-    if (!timestampA && timestampB) return 1;
+    if (!usernameA || !usernameB) return 0;
     
-    // Neither has timestamp - alphabetical order
-    return a.localeCompare(b);
+    const timeA = lastMessageTimestamps.get(usernameA.toLowerCase()) || 0;
+    const timeB = lastMessageTimestamps.get(usernameB.toLowerCase()) || 0;
+    
+    return timeB - timeA; // Most recent first
   });
+
+  // Efficient DOM manipulation: use DocumentFragment
+  const fragment = document.createDocumentFragment();
+  const headers = Array.from(userList.querySelectorAll(".chat-header"));
+  
+  // Re-add headers first
+  headers.forEach(header => fragment.appendChild(header));
+  
+  // Add sorted items
+  items.forEach(item => fragment.appendChild(item));
+  
+  // Clear and re-append in one operation
+  userList.innerHTML = "";
+  userList.appendChild(fragment);
+  
+  // Refresh timestamps in DOM after re-ordering
+  refreshAllTimestampsInDOM();
 }
 
-export async function renderUserList(allUsers, onlineUsers) {
-  if (isRendering) {
-    console.log("Queueing render request");
-    renderQueue = { allUsers, onlineUsers };
+// Called when a message is received to trigger re-sort
+export function onMessageReceived(username) {
+  if (!username || username === '_history_loaded_' || username === '_timestamps_initialized_') {
+    triggerUserListSort();
     return;
   }
   
-  isRendering = true;
-  
-  try {
-    const userList = document.getElementById("userList");
-    if (!userList) {
-      console.error("User list element not found");
-      return;
-    }
-
-    // Cache the online users list
-    cachedOnlineUsers = onlineUsers || [];
-
-    const onlineSet = new Set(cachedOnlineUsers);
-    const all = (allUsers || []).filter(u => !(currentUser && u === currentUser.Username));
-    let connected = all.filter(u => onlineSet.has(u));
-    let disconnected = all.filter(u => !onlineSet.has(u));
-
-    // Sort both lists by last message timestamp
-    connected = sortUsersByLastMessage(connected);
-    disconnected = sortUsersByLastMessage(disconnected);
-
-    userList.innerHTML = '';
-
-    const connectedHeader = document.createElement('li');
-    connectedHeader.className = 'chat-header';
-    connectedHeader.innerHTML = '<strong>Connected:</strong>';
-    userList.appendChild(connectedHeader);
-
-    if (connected.length > 0) {
-      connected.forEach((username) => {
-        const li = createUserListItem(username, true);
-        userList.appendChild(li);
-      });
-    } else {
-      const empty = document.createElement('li');
-      empty.innerHTML = '<em>No users online</em>';
-      userList.appendChild(empty);
-    }
-
-    const disconnectedHeader = document.createElement('li');
-    disconnectedHeader.className = 'chat-header';
-    disconnectedHeader.innerHTML = '<strong>Disconnected:</strong>';
-    userList.appendChild(disconnectedHeader);
-
-    if (disconnected.length > 0) {
-      disconnected.forEach((username) => {
-        const li = createUserListItem(username, false);
-        userList.appendChild(li);
-      });
-    } else {
-      const empty = document.createElement('li');
-      empty.innerHTML = '<em>No users offline</em>';
-      userList.appendChild(empty);
-    }
-  } finally {
-    isRendering = false;
-    
-    if (renderQueue) {
-      const { allUsers: qAllUsers, onlineUsers: qOnlineUsers } = renderQueue;
-      renderQueue = null;
-      // Immediate synchronous call for real-time updates
-      renderUserList(qAllUsers, qOnlineUsers);
-    }
-  }
+  console.log("Message received from:", username, "- triggering sort");
+  triggerUserListSort();
 }
-
-function createUserListItem(username, isOnline) {
-  const li = document.createElement("li");
-  li.className = "online-user";
-  li.setAttribute("data-username", username);
-  
-  const dot = document.createElement('span');
-  dot.className = `status-dot ${isOnline ? 'online' : 'offline'}`;
-  li.appendChild(dot);
-  
-  const nameNode = document.createTextNode(username);
-  li.appendChild(nameNode);
-  
-  const unreadCount = unreadMessages.get(username) || 0;
-  if (unreadCount > 0) {
-    const badge = document.createElement('span');
-    badge.className = 'notification-badge';
-    badge.textContent = unreadCount;
-    li.appendChild(badge);
-  }
-  
-  const lastMsgTime = lastMessageTimestamps.get(username);
-  if (lastMsgTime) {
-    const timeEl = document.createElement('small');
-    timeEl.className = 'last-message-indicator';
-    timeEl.textContent = new Date(lastMsgTime).toLocaleTimeString();
-    li.appendChild(timeEl);
-  }
-  
-  li.addEventListener("click", async () => {
-    try {
-      if (currentSocket) {
-        setIntentionalSocketClose(true);
-        currentSocket.close();
-        setCurrentSocket(null);
-      }
-      await setupPrivateChat(username);
-    } catch (err) {
-      console.error("Error setting up private chat:", err);
-      addSystemMessage("Failed to start chat with " + username);
-    }
-  });
-  
-  return li;
-}
-
-export function updateOnlineUsers(users) {
-  console.log("updateOnlineUsers called with:", users);
-  
-  // Update cached online users immediately
-  cachedOnlineUsers = users || [];
-  
-  fetchAllUsersThrottled().then(allUsers => {
-    if (allUsers && allUsers.length > 0) {
-      renderUserList(allUsers, users);
-    } else {
-      const userList = document.getElementById("userList");
-      if (!userList) return;
-
-      let sortedUsers = (users || []).filter(username => 
-        !(currentUser && username === currentUser.Username)
-      );
-
-      sortedUsers = sortUsersByLastMessage(sortedUsers);
-
-      const userItems = userList.querySelectorAll('.online-user, li:not(.chat-header)');
-      userItems.forEach(item => {
-        if (!item.classList.contains('chat-header')) {
-          item.remove();
-        }
-      });
-      
-      let connectedHeader = Array.from(userList.querySelectorAll('.chat-header'))
-        .find(h => h.textContent.includes('Connected'));
-      
-      if (!connectedHeader) {
-        connectedHeader = document.createElement('li');
-        connectedHeader.className = 'chat-header';
-        connectedHeader.innerHTML = '<strong>Connected:</strong>';
-        userList.insertBefore(connectedHeader, userList.firstChild);
-      }
-
-      if (sortedUsers.length > 0) {
-        sortedUsers.forEach(username => {
-          const li = createUserListItem(username, true);
-          userList.insertBefore(li, connectedHeader.nextSibling);
-        });
-      } else {
-        const empty = document.createElement('li');
-        empty.innerHTML = '<em>No users online</em>';
-        userList.insertBefore(empty, connectedHeader.nextSibling);
-      }
-    }
-  });
-}
-
-let lastOnlineUsersFetch = 0;
 
 export async function loadOnlineUsers() {
-  const now = Date.now();
-  if (now - lastOnlineUsersFetch < 2000) {
-    console.log("Throttling loadOnlineUsers");
-    return;
-  }
-  lastOnlineUsersFetch = now;
-
-  console.log("Loading online users...");
-
   try {
-    const onlineRes = await fetch("/api/online-users");
-    if (!onlineRes.ok) throw new Error(`HTTP ${onlineRes.status}`);
-    const onlineData = await onlineRes.json();
-    const online = onlineData.users || [];
-
-    const allUsers = await fetchAllUsersThrottled();
-
-    if (allUsers && allUsers.length) {
-      await renderUserList(allUsers, online);
-    } else {
-      updateOnlineUsers(online);
+    const response = await fetch("/api/online-users");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-
-    if (lastMessageTimestamps.size === 0) {
-      await loadRecentChats();
+    
+    const data = await response.json();
+    console.log("Online users loaded:", data.users?.length || 0);
+    
+    if (data.users && Array.isArray(data.users)) {
+      await renderUserList(data.users);
     }
   } catch (err) {
     console.error("Error loading online users:", err);
-    const userList = document.getElementById("userList");
-    if (userList && !isRendering) {
-      userList.innerHTML = `<li><em>Error loading users</em></li>`;
-    }
   }
 }
 
-// INSTANT re-sort using cached data - NO THROTTLING, NO API CALLS
-export function onMessageReceived(username) {
-  console.log(`Message received from ${username}, re-sorting list INSTANTLY`);
-  
-  // Use cached data for instant update - NO THROTTLING
-  if (cachedAllUsers && cachedAllUsers.length > 0 && cachedOnlineUsers) {
-    // Render immediately with cached online users
-    renderUserList(cachedAllUsers, cachedOnlineUsers);
-  } else if (cachedOnlineUsers && cachedOnlineUsers.length > 0) {
-    // Fallback: use just cached online users
-    updateOnlineUsers(cachedOnlineUsers);
+export function updateOnlineUsers(usernames) {
+  if (!Array.isArray(usernames)) {
+    console.error("Invalid usernames array:", usernames);
+    return;
   }
-  // If no cached data at all, the list will update on next refresh cycle
+  
+  console.log("Updating online users:", usernames);
+  renderUserList(usernames);
+}
+
+export async function renderUserList(usernames) {
+  const userList = document.getElementById("userList");
+  if (!userList) {
+    console.error("User list element not found");
+    return;
+  }
+
+  // Clear existing users (keep headers)
+  const existingHeaders = Array.from(userList.querySelectorAll(".chat-header"));
+  userList.innerHTML = "";
+  existingHeaders.forEach(header => userList.appendChild(header));
+
+  if (!usernames || usernames.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No users online";
+    li.style.color = "#95a5a6";
+    userList.appendChild(li);
+    return;
+  }
+
+  // Create user elements
+  const userElements = usernames.map(username => {
+    const li = document.createElement("li");
+    li.className = "online-user";
+    li.setAttribute("data-username", username);
+    
+    // Online indicator
+    const dot = document.createElement("span");
+    dot.className = "online-dot";
+    dot.style.cssText = 'display: inline-block; width: 8px; height: 8px; background: #27ae60; border-radius: 50%; margin-right: 8px;';
+    li.appendChild(dot);
+    
+    // Username
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = username;
+    li.appendChild(nameSpan);
+    
+    // Unread badge
+    const unreadCount = unreadMessages.get(username) || 0;
+    if (unreadCount > 0) {
+      const badge = document.createElement("span");
+      badge.className = "unread-badge";
+      badge.textContent = String(unreadCount);
+      badge.style.cssText = 'background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 8px;';
+      li.appendChild(badge);
+    }
+    
+    // Timestamp (will be populated by refreshAllTimestampsInDOM)
+    const timestamp = lastMessageTimestamps.get(username.toLowerCase());
+    if (timestamp) {
+      const timeEl = document.createElement("small");
+      timeEl.className = "last-message-indicator";
+      timeEl.style.cssText = 'display: block; color: #95a5a6; font-size: 0.75rem; margin-top: 2px;';
+      const date = new Date(timestamp);
+      timeEl.textContent = date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      li.appendChild(timeEl);
+      li.setAttribute('data-last-message-time', timestamp);
+    }
+    
+    // Click handler
+    li.addEventListener("click", () => {
+      console.log("User clicked:", username);
+      loadChatUI(username);
+    });
+    
+    li.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #2c3e50; transition: background 0.2s;';
+    li.addEventListener('mouseenter', () => li.style.background = '#2c3e50');
+    li.addEventListener('mouseleave', () => li.style.background = '');
+    
+    return li;
+  });
+
+  // Append all users
+  userElements.forEach(el => userList.appendChild(el));
+  
+  // Trigger immediate sort
+  triggerUserListSort();
 }
 
 export function startOnlineUsersRefresh() {
+  console.log("Starting online users refresh interval");
   clearOnlineUsersRefreshInterval();
-  setOnlineUsersRefreshInterval(setInterval(() => {
-    if (!window.currentChatUser) {
-      console.log("Auto-refreshing online users");
-      loadOnlineUsers();
-    }
-  }, 10000));
+  
+  const interval = setInterval(() => {
+    loadOnlineUsers();
+  }, 10000); // Every 10 seconds
+  
+  setOnlineUsersRefreshInterval(interval);
 }
 
 export function stopOnlineUsersRefresh() {
+  console.log("Stopping online users refresh interval");
   clearOnlineUsersRefreshInterval();
 }
