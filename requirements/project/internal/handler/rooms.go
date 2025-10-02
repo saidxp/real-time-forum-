@@ -313,10 +313,10 @@ func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
 
 	// Add to global hub and online users
 	h.globalUsers[user.name] = user
-	h.broadcastGlobalUsers()
-	
-	// Import auth to add to online users
 	auth.AddOnlineUser(currentUser)
+	
+	// Broadcast user status immediately
+	h.broadcastGlobalUsers()
 
 	defer func() {
 		r.leave <- user

@@ -209,33 +209,41 @@ function createUserElement(user, isOnline) {
   const li = document.createElement('li');
   li.className = isOnline ? 'online-user' : 'offline-user';
   li.setAttribute('data-username', user.username);
+  li.setAttribute('data-online', isOnline ? 'true' : 'false');
   
   const container = document.createElement('div');
-  container.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px; cursor: pointer; transition: background 0.2s;';
+  container.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 8px; cursor: pointer; transition: background 0.2s; ${!isOnline ? 'opacity: 0.6;' : ''}`;
   
   const leftSide = document.createElement('div');
   leftSide.style.cssText = 'display: flex; align-items: center; flex: 1;';
   
-  // Status dot
+  // Status dot with proper colors
   const dot = document.createElement('span');
-  dot.style.cssText = `width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background: ${isOnline ? '#27ae60' : '#95a5a6'};`;
+  dot.className = 'status-dot';
+  dot.style.cssText = `width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; background: ${isOnline ? '#27ae60' : '#e74c3c'}; border: 2px solid ${isOnline ? '#2ecc71' : '#c0392b'};`;
   leftSide.appendChild(dot);
   
-  // Username and timestamp
+  // Username with proper styling
   const userInfo = document.createElement('div');
   userInfo.style.cssText = 'flex: 1;';
   
   const nameEl = document.createElement('div');
   nameEl.textContent = user.username;
-  nameEl.style.cssText = `color: ${isOnline ? 'white' : '#bdc3c7'}; font-weight: 500;`;
+  nameEl.style.cssText = `color: ${isOnline ? '#ffffff' : '#7f8c8d'}; font-weight: ${isOnline ? '600' : '400'}; font-size: 14px;`;
   userInfo.appendChild(nameEl);
+  
+  // Status text
+  const statusEl = document.createElement('small');
+  statusEl.textContent = isOnline ? 'Online' : 'Offline';
+  statusEl.style.cssText = `color: ${isOnline ? '#2ecc71' : '#e74c3c'}; font-size: 11px; font-weight: 500;`;
+  userInfo.appendChild(statusEl);
   
   // Last message time
   if (user.lastMessage) {
     const timeEl = document.createElement('small');
     const date = new Date(user.lastMessage);
     timeEl.textContent = date.toLocaleString();
-    timeEl.style.cssText = 'color: #95a5a6; font-size: 0.75rem;';
+    timeEl.style.cssText = 'color: #95a5a6; font-size: 10px; display: block; margin-top: 2px;';
     userInfo.appendChild(timeEl);
   }
   
@@ -246,23 +254,28 @@ function createUserElement(user, isOnline) {
   if (user.unreadCount > 0) {
     const badge = document.createElement('span');
     badge.textContent = user.unreadCount;
-    badge.style.cssText = 'background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold;';
+    badge.style.cssText = 'background: #e74c3c; color: white; padding: 3px 7px; border-radius: 12px; font-size: 11px; font-weight: bold; min-width: 18px; text-align: center;';
     container.appendChild(badge);
   }
   
   li.appendChild(container);
   
-  // Click handler - only allow messaging online users
-  if (isOnline) {
-    li.addEventListener('click', () => {
-      loadChatUI(user.username);
-    });
-    li.addEventListener('mouseenter', () => container.style.background = '#2c3e50');
-    li.addEventListener('mouseleave', () => container.style.background = '');
-  } else {
-    li.style.opacity = '0.6';
-    li.title = 'User is offline';
-  }
+  // Click handler - allow chat with both online and offline users
+  li.addEventListener('click', () => {
+    loadChatUI(user.username);
+    if (!isOnline) {
+      // Show notification that user is offline but chat is still possible
+      const notification = document.createElement('div');
+      notification.textContent = `${user.username} is offline - messages will be delivered when they come online`;
+      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #f39c12; color: white; padding: 10px 15px; border-radius: 5px; z-index: 10000; font-size: 12px;';
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 4000);
+    }
+  });
+  
+  // Hover effects for all users
+  li.addEventListener('mouseenter', () => container.style.background = isOnline ? '#2c3e50' : '#34495e');
+  li.addEventListener('mouseleave', () => container.style.background = '');
   
   return li;
 }
