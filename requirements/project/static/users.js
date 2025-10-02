@@ -110,86 +110,142 @@ export function updateOnlineUsers(usernames) {
   renderUserList(usernames);
 }
 
-export async function renderUserList(usernames) {
+export async function renderUserList(onlineUsernames) {
   const userList = document.getElementById("userList");
-  if (!userList) {
-    console.error("User list element not found");
-    return;
-  }
+  if (!userList) return;
 
-  // Clear existing users (keep headers)
-  const existingHeaders = Array.from(userList.querySelectorAll(".chat-header"));
-  userList.innerHTML = "";
-  existingHeaders.forEach(header => userList.appendChild(header));
+  try {
+    // Get all users to show online/offline status
+    const allUsersRes = await fetch('/api/all-users');
+    const allUsersData = await allUsersRes.json();
+    const allUsers = Array.isArray(allUsersData) ? allUsersData : (allUsersData.users || []);
+    
+    const onlineSet = new Set(onlineUsernames || []);
+    
+    // Separate online and offline users
+    const users = allUsers.map(username => ({
+      username,
+      isOnline: onlineSet.has(username),
+      lastMessage: lastMessageTimestamps.get(username.toLowerCase()) || 0,
+      unreadCount: unreadMessages.get(username) || 0
+    }));
 
-  if (!usernames || usernames.length === 0) {
-    const li = document.createElement("li");
-    li.textContent = "No users online";
-    li.style.color = "#95a5a6";
-    userList.appendChild(li);
-    return;
-  }
-
-  // Create user elements
-  const userElements = usernames.map(username => {
-    const li = document.createElement("li");
-    li.className = "online-user";
-    li.setAttribute("data-username", username);
-    
-    // Online indicator
-    const dot = document.createElement("span");
-    dot.className = "online-dot";
-    dot.style.cssText = 'display: inline-block; width: 8px; height: 8px; background: #27ae60; border-radius: 50%; margin-right: 8px;';
-    li.appendChild(dot);
-    
-    // Username
-    const nameSpan = document.createElement("span");
-    nameSpan.textContent = username;
-    li.appendChild(nameSpan);
-    
-    // Unread badge
-    const unreadCount = unreadMessages.get(username) || 0;
-    if (unreadCount > 0) {
-      const badge = document.createElement("span");
-      badge.className = "unread-badge";
-      badge.textContent = String(unreadCount);
-      badge.style.cssText = 'background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 8px;';
-      li.appendChild(badge);
-    }
-    
-    // Timestamp (will be populated by refreshAllTimestampsInDOM)
-    const timestamp = lastMessageTimestamps.get(username.toLowerCase());
-    if (timestamp) {
-      const timeEl = document.createElement("small");
-      timeEl.className = "last-message-indicator";
-      timeEl.style.cssText = 'display: block; color: #95a5a6; font-size: 0.75rem; margin-top: 2px;';
-      const date = new Date(timestamp);
-      timeEl.textContent = date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      li.appendChild(timeEl);
-      li.setAttribute('data-last-message-time', timestamp);
-    }
-    
-    // Click handler
-    li.addEventListener("click", () => {
-      console.log("User clicked:", username);
-      loadChatUI(username);
+    // Sort by last message timestamp (most recent first), then alphabetically
+    users.sort((a, b) => {
+      if (a.lastMessage && b.lastMessage) {
+        return b.lastMessage - a.lastMessage;
+      }
+      if (a.lastMessage && !b.lastMessage) return -1;
+      if (!a.lastMessage && b.lastMessage) return 1;
+      return a.username.localeCompare(b.username);
     });
-    
-    li.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #2c3e50; transition: background 0.2s;';
-    li.addEventListener('mouseenter', () => li.style.background = '#2c3e50');
-    li.addEventListener('mouseleave', () => li.style.background = '');
-    
-    return li;
-  });
 
-  // Append all users
-  userElements.forEach(el => userList.appendChild(el));
+    // Clear and rebuild list
+    userList.innerHTML = '';
+    
+    // Online users section
+    const onlineHeader = document.createElement('li');
+    onlineHeader.className = 'chat-header';
+    onlineHeader.innerHTML = '<strong>Online</strong>';
+    onlineHeader.style.cssText = 'padding: 8px; background: #34495e; color: white; font-weight: bold;';
+    userList.appendChild(onlineHeader);
+
+    const onlineUsers = users.filter(u => u.isOnline);
+    if (onlineUsers.length === 0) {
+      const empty = document.createElement('li');
+      empty.textContent = 'No users online';
+      empty.style.cssText = 'padding: 8px; color: #95a5a6; font-style: italic;';
+      userList.appendChild(empty);
+    } else {
+      onlineUsers.forEach(user => {
+        userList.appendChild(createUserElement(user, true));
+      });
+    }
+
+    // Offline users section
+    const offlineHeader = document.createElement('li');
+    offlineHeader.className = 'chat-header';
+    offlineHeader.innerHTML = '<strong>Offline</strong>';
+    offlineHeader.style.cssText = 'padding: 8px; background: #34495e; color: white; font-weight: bold; margin-top: 10px;';
+    userList.appendChild(offlineHeader);
+
+    const offlineUsers = users.filter(u => !u.isOnline);
+    if (offlineUsers.length === 0) {
+      const empty = document.createElement('li');
+      empty.textContent = 'No offline users';
+      empty.style.cssText = 'padding: 8px; color: #95a5a6; font-style: italic;';
+      userList.appendChild(empty);
+    } else {
+      offlineUsers.forEach(user => {
+        userList.appendChild(createUserElement(user, false));
+      });
+    }
+  } catch (err) {
+    console.error('Error rendering user list:', err);
+    userList.innerHTML = '<li style="color: #e74c3c; padding: 8px;">Error loading users</li>';
+  }
+}
+
+function createUserElement(user, isOnline) {
+  const li = document.createElement('li');
+  li.className = isOnline ? 'online-user' : 'offline-user';
+  li.setAttribute('data-username', user.username);
   
-  // Trigger immediate sort
-  triggerUserListSort();
+  const container = document.createElement('div');
+  container.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px; cursor: pointer; transition: background 0.2s;';
+  
+  const leftSide = document.createElement('div');
+  leftSide.style.cssText = 'display: flex; align-items: center; flex: 1;';
+  
+  // Status dot
+  const dot = document.createElement('span');
+  dot.style.cssText = `width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background: ${isOnline ? '#27ae60' : '#95a5a6'};`;
+  leftSide.appendChild(dot);
+  
+  // Username and timestamp
+  const userInfo = document.createElement('div');
+  userInfo.style.cssText = 'flex: 1;';
+  
+  const nameEl = document.createElement('div');
+  nameEl.textContent = user.username;
+  nameEl.style.cssText = `color: ${isOnline ? 'white' : '#bdc3c7'}; font-weight: 500;`;
+  userInfo.appendChild(nameEl);
+  
+  // Last message time
+  if (user.lastMessage) {
+    const timeEl = document.createElement('small');
+    const date = new Date(user.lastMessage);
+    timeEl.textContent = date.toLocaleString();
+    timeEl.style.cssText = 'color: #95a5a6; font-size: 0.75rem;';
+    userInfo.appendChild(timeEl);
+  }
+  
+  leftSide.appendChild(userInfo);
+  container.appendChild(leftSide);
+  
+  // Unread badge
+  if (user.unreadCount > 0) {
+    const badge = document.createElement('span');
+    badge.textContent = user.unreadCount;
+    badge.style.cssText = 'background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold;';
+    container.appendChild(badge);
+  }
+  
+  li.appendChild(container);
+  
+  // Click handler - only allow messaging online users
+  if (isOnline) {
+    li.addEventListener('click', () => {
+      loadChatUI(user.username);
+    });
+    li.addEventListener('mouseenter', () => container.style.background = '#2c3e50');
+    li.addEventListener('mouseleave', () => container.style.background = '');
+  } else {
+    li.style.opacity = '0.6';
+    li.title = 'User is offline';
+  }
+  
+  return li;
 }
 
 export function startOnlineUsersRefresh() {

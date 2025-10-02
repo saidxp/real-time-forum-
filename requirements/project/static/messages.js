@@ -32,16 +32,22 @@ export async function addChatMessageToHistory(username, message, timestamp, prep
     if (username === currentUsername) {
       msgContainer.classList.add("own-message");
     }
+    
+    const messageDate = timestamp ? new Date(timestamp) : new Date();
     msgContainer.innerHTML = `
       <div class="username">${escapeHtml(username)}</div>
       <div class="message">${escapeHtml(message)}</div>
-      <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+      <div class="timestamp">${messageDate.toLocaleString()}</div>
     `;
     
     const messagesDiv = document.getElementById("messages");
     if (messagesDiv) {
-      messagesDiv.appendChild(msgContainer);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      if (prepend) {
+        messagesDiv.insertBefore(msgContainer, messagesDiv.firstChild);
+      } else {
+        messagesDiv.appendChild(msgContainer);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
     }
   } catch (err) {
     console.error("Error adding chat message:", err);
@@ -255,7 +261,7 @@ export async function addChatMessage(username, message) {
     msgContainer.innerHTML = `
       <div class="username">${escapeHtml(username)}</div>
       <div class="message">${escapeHtml(message)}</div>
-      <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+      <div class="timestamp">${new Date().toLocaleString()}</div>
     `;
     
     const messagesDiv = document.getElementById("messages");
