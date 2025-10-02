@@ -115,6 +115,16 @@ export async function renderUserList(onlineUsernames) {
   if (!userList) return;
 
   try {
+    // Get current user to exclude from list
+    let currentUsername = null;
+    try {
+      const meRes = await fetch('/api/me');
+      const meData = await meRes.json();
+      currentUsername = meData.Username || meData.username;
+    } catch (e) {
+      console.log('Could not get current user');
+    }
+
     // Get all users to show online/offline status
     const allUsersRes = await fetch('/api/all-users');
     const allUsersData = await allUsersRes.json();
@@ -122,13 +132,15 @@ export async function renderUserList(onlineUsernames) {
     
     const onlineSet = new Set(onlineUsernames || []);
     
-    // Separate online and offline users
-    const users = allUsers.map(username => ({
-      username,
-      isOnline: onlineSet.has(username),
-      lastMessage: lastMessageTimestamps.get(username.toLowerCase()) || 0,
-      unreadCount: unreadMessages.get(username) || 0
-    }));
+    // Filter out current user and create user objects
+    const users = allUsers
+      .filter(username => username !== currentUsername)
+      .map(username => ({
+        username,
+        isOnline: onlineSet.has(username),
+        lastMessage: lastMessageTimestamps.get(username.toLowerCase()) || 0,
+        unreadCount: unreadMessages.get(username) || 0
+      }));
 
     // Sort by last message timestamp (most recent first), then alphabetically
     users.sort((a, b) => {
@@ -249,17 +261,10 @@ function createUserElement(user, isOnline) {
 }
 
 export function startOnlineUsersRefresh() {
-  console.log("Starting online users refresh interval");
-  clearOnlineUsersRefreshInterval();
-  
-  const interval = setInterval(() => {
-    loadOnlineUsers();
-  }, 10000); // Every 10 seconds
-  
-  setOnlineUsersRefreshInterval(interval);
+  // No polling - rely on real-time WebSocket updates only
+  console.log("Real-time mode: No polling needed");
 }
 
 export function stopOnlineUsersRefresh() {
-  console.log("Stopping online users refresh interval");
   clearOnlineUsersRefreshInterval();
 }

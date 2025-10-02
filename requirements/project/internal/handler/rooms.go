@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
+	auth "forum/internal/auth"
 	db "forum/internal/db"
 
 	"github.com/gorilla/websocket"
@@ -20,9 +22,20 @@ type Hub struct {
 
 // Create a new Hub
 func NewHub() *Hub {
-	return &Hub{
+	h := &Hub{
 		Rooms:       make(map[string]*room),
 		globalUsers: make(map[string]*user),
+	}
+	go h.run()
+	return h
+}
+
+// run handles global user events and broadcasts
+func (h *Hub) run() {
+	for {
+		// Broadcast user list every 2 seconds for real-time updates
+		time.Sleep(2 * time.Second)
+		h.broadcastGlobalUsers()
 	}
 }
 
@@ -298,13 +311,17 @@ func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
 
 	r.join <- user
 
-	// Add to global hub
+	// Add to global hub and online users
 	h.globalUsers[user.name] = user
 	h.broadcastGlobalUsers()
+	
+	// Import auth to add to online users
+	auth.AddOnlineUser(currentUser)
 
 	defer func() {
 		r.leave <- user
 		delete(h.globalUsers, user.name)
+		auth.RemoveOnlineUser(currentUser)
 		h.broadcastGlobalUsers()
 	}()
 

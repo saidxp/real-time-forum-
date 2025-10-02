@@ -127,7 +127,7 @@ export function setupWebSocket(targetUser) {
   socket.onopen = () => {
     console.log("WebSocket connected successfully");
     addSystemMessage("Connected to server");
-    reconnectAttempts = 0; // Reset reconnect counter on success
+    reconnectAttempts = 0;
 
     if (!targetUser) {
       stopOnlineUsersRefresh();
@@ -243,8 +243,8 @@ export function setupWebSocket(targetUser) {
 
       // Handle user joined/left - IMMEDIATE UPDATE
       if ((data.type === "user_joined" || data.type === "user_left") && !targetUser) {
-        console.log(`User ${data.type}:`, data.name);
-        await loadOnlineUsers();
+        console.log(`User ${data.type}:`, data.username);
+        loadOnlineUsers();
         return;
       }
     } catch (err) {
