@@ -95,15 +95,12 @@ export async function loadOnlineUsers() {
     const data = await response.json();
     console.log("Online users loaded:", data.users?.length || 0);
     
-    if (data.users && Array.isArray(data.users)) {
-      await renderUserList(data.users);
-    } else {
-      // Show empty state instead of loading
-      userList.innerHTML = '<li class="chat-header"><strong>Online</strong></li><li style="padding: 8px; color: #95a5a6;">No users online</li>';
-    }
+    // Always render user list, even if no online users
+    await renderUserList(data.users || []);
   } catch (err) {
     console.error("Error loading online users:", err);
-    userList.innerHTML = '<li class="chat-header"><strong>Online</strong></li><li style="padding: 8px; color: #e74c3c;">Error loading users</li>';
+    // Still try to show all users even if online users API fails
+    await renderUserList([]);
   }
 }
 
@@ -114,7 +111,89 @@ export function updateOnlineUsers(usernames) {
   }
   
   console.log("Updating online users:", usernames);
-  renderUserList(usernames);
+  
+  const userList = document.getElementById("userList");
+  if (!userList) {
+    renderUserList(usernames);
+    return;
+  }
+  
+  const onlineSet = new Set(usernames);
+  
+  // Smooth status updates for existing users
+  const existingUsers = userList.querySelectorAll('[data-username]');
+  const usersToMove = [];
+  
+  existingUsers.forEach(userEl => {
+    const username = userEl.getAttribute('data-username');
+    const isOnline = onlineSet.has(username);
+    const wasOnline = userEl.getAttribute('data-online') === 'true';
+    
+    if (isOnline !== wasOnline) {
+      // Add smooth transition
+      userEl.style.transition = 'all 0.4s ease';
+      
+      userEl.setAttribute('data-online', isOnline ? 'true' : 'false');
+      userEl.className = isOnline ? 'online-user' : 'offline-user';
+      
+      // Update visual elements with smooth transitions
+      const dot = userEl.querySelector('.status-dot');
+      const statusEl = userEl.querySelector('small');
+      const container = userEl.querySelector('div');
+      const nameEl = userEl.querySelector('div > div');
+      
+      if (dot) {
+        dot.style.transition = 'all 0.4s ease';
+        dot.style.background = isOnline ? '#27ae60' : '#e74c3c';
+        dot.style.borderColor = isOnline ? '#2ecc71' : '#c0392b';
+      }
+      if (statusEl) {
+        statusEl.style.transition = 'color 0.4s ease';
+        statusEl.textContent = isOnline ? 'Online' : 'Offline';
+        statusEl.style.color = isOnline ? '#2ecc71' : '#e74c3c';
+      }
+      if (container) {
+        container.style.transition = 'opacity 0.4s ease';
+        container.style.opacity = isOnline ? '1' : '0.6';
+      }
+      if (nameEl) {
+        nameEl.style.transition = 'color 0.4s ease, font-weight 0.4s ease';
+        nameEl.style.color = isOnline ? '#ffffff' : '#7f8c8d';
+        nameEl.style.fontWeight = isOnline ? '600' : '400';
+      }
+      
+      // Queue user for section movement
+      usersToMove.push({ element: userEl, isOnline, username });
+    }
+  });
+  
+  // Move users to correct sections after animation
+  if (usersToMove.length > 0) {
+    setTimeout(() => {
+      usersToMove.forEach(({ element, isOnline }) => {
+        const onlineHeader = userList.querySelector('.chat-header');
+        const offlineHeader = userList.querySelector('.chat-header:last-of-type');
+        
+        if (isOnline && onlineHeader) {
+          // Find insertion point in online section
+          let insertAfter = onlineHeader;
+          const onlineUsers = userList.querySelectorAll('.online-user');
+          if (onlineUsers.length > 0) {
+            insertAfter = onlineUsers[onlineUsers.length - 1];
+          }
+          insertAfter.insertAdjacentElement('afterend', element);
+        } else if (!isOnline && offlineHeader) {
+          // Insert at beginning of offline section
+          offlineHeader.insertAdjacentElement('afterend', element);
+        }
+      });
+    }, 200);
+  }
+  
+  // If no existing users, do full render
+  if (existingUsers.length === 0) {
+    renderUserList(usernames);
+  }
 }
 
 export async function renderUserList(onlineUsernames) {
@@ -212,7 +291,7 @@ function createUserElement(user, isOnline) {
   li.setAttribute('data-online', isOnline ? 'true' : 'false');
   
   const container = document.createElement('div');
-  container.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 8px; cursor: pointer; transition: background 0.2s; ${!isOnline ? 'opacity: 0.6;' : ''}`;
+  container.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 8px; cursor: pointer; transition: all 0.3s ease; ${!isOnline ? 'opacity: 0.6;' : ''}`;
   
   const leftSide = document.createElement('div');
   leftSide.style.cssText = 'display: flex; align-items: center; flex: 1;';

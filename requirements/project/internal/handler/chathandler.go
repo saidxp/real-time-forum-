@@ -163,7 +163,7 @@ func GetUnreadCountHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get unread count
+	// Get unread countS
 	unreadCount, err := db.GetUnreadMessageCount(currentUserID)
 	if err != nil {
 		http.Error(w, "Failed to get unread count", http.StatusInternalServerError)

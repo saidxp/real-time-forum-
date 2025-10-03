@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 
-	auth "forum/internal/auth"
+	// auth "forum/internal/auth"
 	db "forum/internal/db"
 
 	"github.com/gorilla/websocket"
@@ -32,58 +31,17 @@ func NewHub() *Hub {
 
 // run handles global user events and broadcasts
 func (h *Hub) run() {
-	for {
-		// Broadcast user list every 3 seconds for real-time updates
-		time.Sleep(3 * time.Second)
-		h.broadcastGlobalUsers()
-		// Also broadcast to all rooms (including private chats)
-		h.broadcastUsersToAllRooms()
-	}
+	// No longer broadcasting user lists via WebSocket
+	// Users stay online based on session, not WebSocket connection
 }
 
 // broadcastUsersToAllRooms sends user list to all rooms including private chats
 func (h *Hub) broadcastUsersToAllRooms() {
-	var names []string
-	for name := range h.globalUsers {
-		names = append(names, name)
-	}
-
-	payload, _ := json.Marshal(map[string]interface{}{
-		"type": "users",
-		"list": names,
-	})
-
-	// Send to all rooms
-	for _, room := range h.Rooms {
-		for user := range room.users {
-			select {
-			case user.recieve <- payload:
-			default:
-				// User channel full, skip
-			}
-		}
-	}
+	// No longer broadcasting - users stay online based on session
 }
 
 func (h *Hub) broadcastGlobalUsers() {
-	var names []string
-	for name := range h.globalUsers {
-		names = append(names, name)
-	}
-
-	payload, _ := json.Marshal(map[string]interface{}{
-		"type": "users",
-		"list": names,
-	})
-
-	// Send to every connected user
-	for _, u := range h.globalUsers {
-		select {
-		case u.recieve <- payload:
-		default:
-			// user channel full, skip
-		}
-	}
+	// No longer broadcasting - users stay online based on session
 }
 
 // BroadcastToAllRooms sends a message to all rooms
@@ -109,7 +67,7 @@ func (h *Hub) GetRoom(name string) *room {
 	if r, ok := h.Rooms[name]; ok {
 		return r
 	}
-	r := NewRoom(name) // Pass room name to constructor
+	r := NewRoom(name, h) // Pass room name and hub reference
 	h.Rooms[name] = r
 	go r.Run()
 	return r
@@ -122,16 +80,18 @@ type room struct {
 	leave   chan *user
 	forward chan []byte
 	name    string // Store room name
+	hub     *Hub   // Reference to hub for global notifications
 }
 
 // Create a new Room with name
-func NewRoom(name string) *room {
+func NewRoom(name string, hub *Hub) *room {
 	return &room{
 		users:   make(map[*user]bool),
 		join:    make(chan *user),
 		leave:   make(chan *user),
 		forward: make(chan []byte),
 		name:    name,
+		hub:     hub,
 	}
 }
 
@@ -150,14 +110,12 @@ func (r *room) Run() {
 		case u := <-r.join:
 			r.users[u] = true
 			log.Printf("User %s joined room %s", u.name, r.name)
-			r.broadcastUsers()
 
 		case u := <-r.leave:
 			if _, ok := r.users[u]; ok {
 				delete(r.users, u)
 				close(u.recieve)
 				log.Printf("User %s left room %s", u.name, r.name)
-				r.broadcastUsers()
 			}
 
 		case msg := <-r.forward:
@@ -212,6 +170,17 @@ func (r *room) Run() {
 					// User channel is full, skip
 				}
 			}
+			
+			// Send notification to all global users
+			if chatMsg.Type == "message" {
+				for _, globalUser := range r.hub.globalUsers {
+					select {
+					case globalUser.recieve <- msg:
+					default:
+						// User channel full, skip
+					}
+				}
+			}
 		}
 	}
 }
@@ -228,23 +197,7 @@ func (r *room) getUserIDByUsername(username string) int {
 
 // broadcastUsers sends the current online users in the room
 func (r *room) broadcastUsers() {
-	var names []string
-	for u := range r.users {
-		names = append(names, u.name)
-	}
-
-	payload, _ := json.Marshal(map[string]interface{}{
-		"type": "users",
-		"list": names,
-	})
-
-	for u := range r.users {
-		select {
-		case u.recieve <- payload:
-		default:
-			// User channel is full, skip
-		}
-	}
+	// No longer broadcasting - users stay online based on session
 }
 
 // Constants for WebSocket buffer sizes
@@ -300,7 +253,14 @@ func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
 			userID:  currentUserID,
 		}
 		r.join <- user
-		defer func() { r.leave <- user }()
+
+		// Add to global users but don't manage online status via WebSocket
+		h.globalUsers[user.name] = user
+
+		defer func() {
+			r.leave <- user
+			delete(h.globalUsers, user.name)
+		}()
 		go user.write()
 		user.read()
 		return
@@ -337,18 +297,12 @@ func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
 
 	r.join <- user
 
-	// Add to global hub and online users
+	// Add to global hub but don't manage online status via WebSocket
 	h.globalUsers[user.name] = user
-	auth.AddOnlineUser(currentUser)
-	
-	// Broadcast user status immediately
-	h.broadcastGlobalUsers()
 
 	defer func() {
 		r.leave <- user
 		delete(h.globalUsers, user.name)
-		auth.RemoveOnlineUser(currentUser)
-		h.broadcastGlobalUsers()
 	}()
 
 	go user.write()
