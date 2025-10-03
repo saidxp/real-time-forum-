@@ -66,6 +66,11 @@ func (c *user) write() {
 	}()
 
 	for msg := range c.recieve {
+		fmt.Printf("Im At Write Case ")
+		fmt.Println(string(msg))
+		fmt.Println("====im at user=====")
+		fmt.Println(c.name)
+		fmt.Println("==================")
 		if c.socket == nil {
 			log.Printf("Socket is nil for user %s", c.name)
 			return
@@ -106,11 +111,24 @@ func (c *user) write() {
 			// unknown type, skip
 			continue
 		}
+		fmt.Println("The Name Who Is come from the front ")
+		fmt.Println(chatMsg.To)
+		fmt.Println("<====================================>")
 
 		// finally, write to the websocket
+		if (c.name == chatMsg.To) {
+		// fmt.Println(outgoing.Name)
+			fmt.Println("===========")
 		if err := c.socket.WriteMessage(websocket.TextMessage, outgoing); err != nil {
 			log.Printf("Write error for user %s: %v", c.name, err)
 			return
+		}
+		}
+		if (chatMsg.Type == "message") {
+			if err := c.socket.WriteMessage(websocket.TextMessage, outgoing); err != nil {
+				log.Printf("Write error for user %s: %v", c.name, err)
+				return
+		}
 		}
 
 		log.Printf("Message sent to %s: %s", c.name, string(outgoing))

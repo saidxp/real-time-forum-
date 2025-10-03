@@ -127,7 +127,7 @@ export function setupWebSocket(targetUser) {
   socket.onopen = () => {
     console.log("WebSocket connected successfully");
     addSystemMessage("Connected to server");
-    reconnectAttempts = 0; // Reset reconnect counter on success
+    reconnectAttempts = 0;
 
     if (!targetUser) {
       stopOnlineUsersRefresh();
@@ -194,8 +194,8 @@ export function setupWebSocket(targetUser) {
     console.log("WebSocket message received:", data);
 
     try {
-      // Handle user list updates - IMMEDIATE
-      if (data.type === "users" && !targetUser) {
+      // Handle user list updates - ALWAYS (even in private chat)
+      if (data.type === "users") {
         console.log("Updating online users immediately:", data.list);
         updateOnlineUsers(data.list || []);
         return;
@@ -203,7 +203,7 @@ export function setupWebSocket(targetUser) {
       if (data.type === "typing") {
         const typingDiv = document.getElementById("typing-indicator");
         if (typingDiv) {
-          typingDiv.textContent = `${data.to} is typing...`;
+          typingDiv.textContent = `${data.To} is typing...`;
           setTimeout(() => {
             typingDiv.textContent = "";
           }, 3000);
@@ -221,10 +221,12 @@ export function setupWebSocket(targetUser) {
       } else if (isOwnMessage && targetUser) {
         updateLastMessageTimestamp(targetUser, Date.now());
       }
-
-      // INSTANT re-sort - synchronous, no await
-      if (!targetUser && !isOwnMessage && cachedOnMessageReceived) {
-        cachedOnMessageReceived(messageUsername);
+      
+      // Handle user joined/left - ALWAYS UPDATE (even in private chat)
+      if (data.type === "user_joined" || data.type === "user_left") {
+        console.log(`User ${data.type}:`, data.username);
+        loadOnlineUsers();
+        return;
       }
 
       // Handle unread messages and notifications

@@ -1,9 +1,20 @@
-import { currentUser, currentSocket, setHasMoreMessages, currentChatUserID, isLoadingMessages, setIsLoadingMessages, messagesLoaded, lastMessageTimestamps, updateLastMessageTimestamp, incrementMessagesLoaded } from "./chatState.js";
+import { 
+  currentUser, 
+  currentSocket, 
+  setHasMoreMessages, 
+  currentChatUserID, 
+  isLoadingMessages, 
+  setIsLoadingMessages, 
+  messagesLoaded, 
+  lastMessageTimestamps, 
+  updateLastMessageTimestamp, 
+  incrementMessagesLoaded 
+} from "./chatState.js";
 
-// Cache the onMessageReceived function for synchronous access
-let cachedOnMessageReceived = null;
+// Import sort trigger
+let triggerUserListSort = null;
 import('./users.js').then(module => {
-  cachedOnMessageReceived = module.onMessageReceived;
+  triggerUserListSort = module.triggerUserListSort;
 }).catch(() => {});
 
 export function escapeHtml(text) {
@@ -21,34 +32,28 @@ export async function addChatMessageToHistory(username, message, timestamp, prep
     if (username === currentUsername) {
       msgContainer.classList.add("own-message");
     }
+    
+    const messageDate = timestamp ? new Date(timestamp) : new Date();
     msgContainer.innerHTML = `
       <div class="username">${escapeHtml(username)}</div>
       <div class="message">${escapeHtml(message)}</div>
-      <div class="timestamp">${timestamp.toLocaleString()}</div>
+      <div class="timestamp">${messageDate.toLocaleString()}</div>
     `;
     
     const messagesDiv = document.getElementById("messages");
-    if (!messagesDiv) return;
-
-    if (prepend) {
-      const firstMessage = messagesDiv.querySelector(".message-container");
-      if (firstMessage) {
-        messagesDiv.insertBefore(msgContainer, firstMessage);
+    if (messagesDiv) {
+      if (prepend) {
+        messagesDiv.insertBefore(msgContainer, messagesDiv.firstChild);
       } else {
         messagesDiv.appendChild(msgContainer);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }
-    } else {
-      messagesDiv.appendChild(msgContainer);
-    }
-
-    const loadMoreBtn = document.getElementById("loadMoreBtn");
-    if (loadMoreBtn) {
-      messagesDiv.insertBefore(loadMoreBtn, messagesDiv.firstChild);
     }
   } catch (err) {
-    console.error("Error adding message to history:", err);
+    console.error("Error adding chat message:", err);
   }
 }
+    
 
 export function addSystemMessage(message) {
   const msgContainer = document.createElement("div");
@@ -116,31 +121,40 @@ export async function loadChatHistory() {
       
       const scrollHeightBefore = messagesDiv.scrollHeight;
 
-      // Update timestamps FIRST for all messages
+      // CRITICAL: Update ALL timestamps FIRST, then trigger ONE sort
       let needsResort = false;
+      const timestampUpdates = [];
+      
       data.messages.forEach(msg => {
         if (msg.sender_name && msg.sender_name !== (currentUser ? currentUser.Username : "")) {
           const msgTime = new Date(msg.created_at).getTime();
-          const existingTime = lastMessageTimestamps.get(msg.sender_name) || 0;
+          const existingTime = lastMessageTimestamps.get(msg.sender_name.toLowerCase()) || 0;
+          
           if (msgTime > existingTime) {
-            updateLastMessageTimestamp(msg.sender_name, msgTime);
+            timestampUpdates.push({ username: msg.sender_name, time: msgTime });
             needsResort = true;
           }
         }
       });
 
-      // Trigger INSTANT re-sort BEFORE rendering messages
-      if (needsResort && cachedOnMessageReceived) {
-        cachedOnMessageReceived('_history_loaded_');
+      // Apply all timestamp updates synchronously
+      timestampUpdates.forEach(({ username, time }) => {
+        updateLastMessageTimestamp(username, time);
+      });
+
+      // Trigger ONE sort after all updates
+      if (needsResort && triggerUserListSort) {
+        requestAnimationFrame(() => triggerUserListSort());
       }
 
+      // Render messages
       if (messagesLoaded === 0) {
-        (data.messages || []).forEach(msg => {
+        data.messages.forEach(msg => {
           addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at), false);
         });
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       } else {
-        (data.messages || []).forEach(msg => {
+        data.messages.forEach(msg => {
           addChatMessageToHistory(msg.sender_name, msg.message, new Date(msg.created_at), true);
         });
         const scrollHeightAfter = messagesDiv.scrollHeight;
@@ -152,11 +166,7 @@ export async function loadChatHistory() {
       
       const loadMoreBtn = document.getElementById("loadMoreBtn");
       if (loadMoreBtn) {
-        if (data.hasMore) {
-          loadMoreBtn.style.display = "block";
-        } else {
-          loadMoreBtn.style.display = "none";
-        }
+        loadMoreBtn.style.display = data.hasMore ? "block" : "none";
       }
     } else {
       setHasMoreMessages(false);
@@ -197,31 +207,37 @@ export async function initializeMessageTimestamps() {
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
         if (data.recent_chats && data.recent_chats.length > 0) {
-          console.log("Loading initial timestamps from recent chats:", data.recent_chats.length, "users");
+          console.log("Loading initial timestamps:", data.recent_chats.length, "users");
           
-          // Update all timestamps FIRST
+          // CRITICAL: Update ALL timestamps FIRST
+          const updates = [];
           data.recent_chats.forEach(chat => {
             if (chat.username && chat.last_message_time) {
               const timestamp = new Date(chat.last_message_time).getTime();
-              updateLastMessageTimestamp(chat.username, timestamp);
-              console.log(`Set timestamp for ${chat.username}: ${new Date(timestamp).toLocaleString()}`);
+              updates.push({ username: chat.username, timestamp });
             }
           });
-          console.log("Total timestamps loaded:", lastMessageTimestamps.size);
           
-          // Trigger SINGLE INSTANT sort after all timestamps loaded
-          if (cachedOnMessageReceived) {
-            cachedOnMessageReceived('_timestamps_initialized_');
+          // Apply all updates synchronously
+          updates.forEach(({ username, timestamp }) => {
+            updateLastMessageTimestamp(username, timestamp);
+          });
+          
+          console.log("Timestamps loaded:", lastMessageTimestamps.size);
+          
+          // Trigger ONE sort after all timestamps loaded
+          if (triggerUserListSort) {
+            requestAnimationFrame(() => triggerUserListSort());
           }
         } else {
           console.log("No recent chats found");
         }
       }
     } else {
-      console.log("Recent chats endpoint returned status:", response.status);
+      console.log("Recent chats endpoint status:", response.status);
     }
   } catch (err) {
-    console.log("Could not load initial message timestamps, using real-time tracking only:", err);
+    console.log("Could not load initial timestamps:", err);
   }
 }
 
@@ -245,7 +261,7 @@ export async function addChatMessage(username, message) {
     msgContainer.innerHTML = `
       <div class="username">${escapeHtml(username)}</div>
       <div class="message">${escapeHtml(message)}</div>
-      <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+      <div class="timestamp">${new Date().toLocaleString()}</div>
     `;
     
     const messagesDiv = document.getElementById("messages");
