@@ -560,48 +560,52 @@ function setupChatWebSocket(user1, user2) {
     };
     
     chatWebSocket.onmessage = (event) => {
-    try {
-        const data = JSON.parse(event.data);
-        console.log('📨 Received message:', data);
-        
-        if (data.type === 'message') {
-            hideTypingIndicator();
+        try {
+            const data = JSON.parse(event.data);
+            console.log('📨 Received WebSocket message:', data);
             
-            // Check if this message is from the current user
-            const isSent = data.name === currentUsername || String(data.sender_id) === String(currentUserId);
-            
-            const message = {
-                message: data.message,
-                sender_id: isSent ? currentUserId : activeChatUserId,
-                created_at: data.created_at || new Date().toISOString()
-            };
-            
-            // Display the message
-            displayMessage(message, isSent);
-            
-            // Update user list order for both sent and received messages
-            if (isSent) {
-                updateUserListOrder(activeChatUsername, data.message);
-            } else if (data.name === activeChatUsername) {
-                updateUserListOrder(data.name, data.message);
-                addUnreadMessage(data.name);
-                showBrowserNotification(data.name);
+            if (data.type === 'message') {
+                const isSent = data.name === currentUsername;
+                
+                // Only display message if it belongs to the current active chat
+                if (isSent || data.name === activeChatUsername) {
+                    hideTypingIndicator();
+                    
+                    const message = {
+                        message: data.message,
+                        sender_id: isSent ? currentUserId : activeChatUserId,
+                        created_at: data.created_at || new Date().toISOString()
+                    };
+                    
+                    console.log('💬 Displaying message in active chat:', { message, isSent, activeChatUsername });
+                    displayMessage(message, isSent);
+                    scrollToBottom();
+                }
+                
+                // Always update user list order for any message
+                if (isSent) {
+                    updateUserListOrder(activeChatUsername, data.message);
+                } else {
+                    updateUserListOrder(data.name, data.message);
+                    // Only add unread count if not currently chatting with this user
+                    if (data.name !== activeChatUsername) {
+                        addUnreadMessage(data.name);
+                        showBrowserNotification(data.name);
+                    }
+                }
+            } else if (data.type === 'typing') {
+                if (data.name !== currentUsername && data.name === activeChatUsername) {
+                    showTypingIndicator();
+                }
+            } else if (data.type === 'stop_typing') {
+                if (data.name !== currentUsername && data.name === activeChatUsername) {
+                    hideTypingIndicator();
+                }
             }
-            
-            scrollToBottom();
-        } else if (data.type === 'typing') {
-            if (data.name !== currentUsername && data.name === activeChatUsername) {
-                showTypingIndicator();
-            }
-        } else if (data.type === 'stop_typing') {
-            if (data.name !== currentUsername && data.name === activeChatUsername) {
-                hideTypingIndicator();
-            }
+        } catch (error) {
+            console.debug('Non-JSON message or parse error:', error);
         }
-    } catch (error) {
-        console.debug('Non-JSON message received or parse error:', error);
-    }
-};
+    };
 
     chatWebSocket.onerror = (error) => {
         console.error('❌ Chat WebSocket error:', error);
