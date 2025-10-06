@@ -57,12 +57,25 @@ export async function getCurrentUser(){
 // Load users with online status (excluding current user)
 export async function loadUsersWithStatus(){
     try {
-        // Fetch current user, all users and online users
-        const [currentUserData, allUsersData, onlineUsersData] = await Promise.all([
-            getCurrentUser(),
-            loadAllUsers(),
-            loadOnlineUsers()
-        ]);
+        // Add delay to prevent rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Fetch current user first
+        const currentUserData = await getCurrentUser();
+        if (!currentUserData) return [];
+        
+        // Small delay between requests
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Fetch all users
+        const allUsersData = await loadAllUsers();
+        if (!allUsersData) return [];
+        
+        // Small delay between requests
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Fetch online users
+        const onlineUsersData = await loadOnlineUsers();
         
         // Extract user arrays
         const currentUsername = currentUserData?.Username || currentUserData?.username || '';
@@ -74,13 +87,12 @@ export async function loadUsersWithStatus(){
         
         // Map all users with their online status, excluding current user
         const usersWithStatus = allUsers
-            .filter(username => username !== currentUsername) // Exclude current user
+            .filter(username => username !== currentUsername)
             .map(username => ({
                 username: username,
                 isOnline: onlineUsersSet.has(username)
             }));
         
-        console.log('Users with status (excluding current user):', usersWithStatus);
         return usersWithStatus;
     } catch (error) {
         console.error('Error loading users with status:', error);
@@ -115,39 +127,36 @@ export function initUserWebSocket(onUsersUpdate) {
             });
         };
         
+        let lastRefresh = 0;
+        const REFRESH_THROTTLE = 2000; // 2 seconds minimum between refreshes
+        
         userWebSocket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 console.log('📨 WebSocket message received:', data);
                 
+                // Throttle user list refreshes to prevent rate limiting
+                const now = Date.now();
+                if (now - lastRefresh < REFRESH_THROTTLE) {
+                    console.log('⏳ Throttling user list refresh');
+                    return;
+                }
+                
                 // Handle different message types
-                if (data.type === 'users_update') {
-                    // Full user list update - refresh with status
-                    console.log('🔄 Users list updated via WebSocket');
-                    loadUsersWithStatus().then(users => {
-                        if (users && onUsersUpdate) {
-                            onUsersUpdate(users);
-                        }
-                    });
-                } else if (data.type === 'user_joined') {
-                    // User joined - refresh immediately
-                    console.log(`👋 User joined: ${data.username}`);
-                    loadUsersWithStatus().then(users => {
-                        if (users && onUsersUpdate) {
-                            onUsersUpdate(users);
-                        }
-                    });
-                } else if (data.type === 'user_left') {
-                    // User left - refresh immediately
-                    console.log(`👋 User left: ${data.username}`);
-                    loadUsersWithStatus().then(users => {
-                        if (users && onUsersUpdate) {
-                            onUsersUpdate(users);
-                        }
-                    });
-                } else if (data.type === 'message') {
-                    // Chat message received - could trigger refresh if needed
-                    console.log('💬 Chat message received');
+                if (data.type === 'users_update' || data.type === 'user_joined' || data.type === 'user_left') {
+                    lastRefresh = now;
+                    console.log('🔄 Refreshing user list');
+                    
+                    // Add delay before refresh to prevent rate limiting
+                    setTimeout(() => {
+                        loadUsersWithStatus().then(users => {
+                            if (users && onUsersUpdate) {
+                                onUsersUpdate(users);
+                            }
+                        }).catch(err => {
+                            console.log('Rate limited, skipping refresh');
+                        });
+                    }, 200);
                 }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);

@@ -105,7 +105,7 @@ export function creatchatisland() {
         }).catch(err => {
             console.log('Rate limited, skipping refresh');
         });
-    }, 30000);
+    }, 60000); // Increased to 60 seconds
 }
 
 // Setup minimize button
@@ -590,7 +590,7 @@ function setupChatWebSocket(user1, user2) {
                     // Only add unread count if not currently chatting with this user
                     if (data.name !== activeChatUsername) {
                         addUnreadMessage(data.name);
-                        showBrowserNotification(data.name);
+                        // showBrowserNotification(data.name);
                     }
                 }
             } else if (data.type === 'typing') {
@@ -738,36 +738,16 @@ function sendMessage() {
     return;
   }
 
+  // Immediately stop typing and clear input to prevent conflicts
+  isTyping = false;
+  clearTimeout(typingTimer);
+  chatInput.value = '';
+
   // Check WebSocket state
   if (!chatWebSocket || chatWebSocket.readyState !== WebSocket.OPEN) {
     console.warn('WebSocket not ready, attempting to reconnect...');
-    
-    // Show error to user
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.textContent = '⚠️ Connection lost. Reconnecting...';
-    errorDiv.style.cssText = 'background: #fee; color: #c00; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;';
-    document.getElementById('chatMessagesContainer').appendChild(errorDiv);
-    
-    // Try to reconnect
-    setupChatWebSocket(currentUsername, activeChatUsername);
-    
-    setTimeout(() => errorDiv.remove(), 3000);
+    chatInput.value = message; // Put message back
     return;
-  }
-
-  // Stop typing indicator when sending
-  if (isTyping) {
-    isTyping = false;
-    clearTimeout(typingTimer);
-    try {
-      chatWebSocket.send(JSON.stringify({
-        type: 'stop_typing',
-        name: currentUsername
-      }));
-    } catch (e) {
-      console.error('Error sending stop_typing:', e);
-    }
   }
 
   const messageData = {
@@ -777,40 +757,13 @@ function sendMessage() {
     sender_id: currentUserId
   };
 
-  console.log(' Sending message:', messageData);
-
   // Send via WebSocket
   try {
     chatWebSocket.send(JSON.stringify(messageData));
-    console.log(' Message sent via WebSocket');
-    
-    // Clear input immediately
-    chatInput.value = '';
-    
-    // Note: Message will be displayed when we receive it back from the server
-    // This ensures consistent message ordering and includes the database timestamp
-    
+    console.log('✅ Message sent via WebSocket');
   } catch (error) {
-    console.error(' Error sending message:', error);
-    
-    // Show user-friendly error
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.textContent = ' Failed to send message. Please try again.';
-    errorDiv.style.cssText = 'background: #fee; color: #c00; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;';
-    const container = document.getElementById('chatMessagesContainer');
-    if (container) {
-        container.appendChild(errorDiv);
-        scrollToBottom();
-    }
-    
-    // Put the message back in the input
-    chatInput.value = message;
-    
-    // Remove error after 3 seconds
-    setTimeout(() => {
-      errorDiv.remove();
-    }, 3000);
+    console.error('❌ Error sending message:', error);
+    chatInput.value = message; // Put message back on error
   }
 }
 
@@ -1006,25 +959,25 @@ function updateUserBadge(username) {
         if (badge) badge.remove();
     }
 }
-function showBrowserNotification(username) {
-    if (document.hasFocus()) return; // Don't show if user is on the page
+// function showBrowserNotification(username) {
+//     if (document.hasFocus()) return; // Don't show if user is on the page
 
-    if (Notification.permission === "granted") {
-        new Notification(`New message from ${username}`, {
-            body: "Click to open chat",
-            icon: "/chat-icon.png" // optional
-        });
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification(`New message from ${username}`, {
-                    body: "Click to open chat",
-                    icon: "/chat-icon.png"
-                });
-            }
-        });
-    }
-}
+//     if (Notification.permission === "granted") {
+//         new Notification(`New message from ${username}`, {
+//             body: "Click to open chat",
+//             icon: "/chat-icon.png" // optional
+//         });
+//     } else if (Notification.permission !== "denied") {
+//         Notification.requestPermission().then(permission => {
+//             if (permission === "granted") {
+//                 new Notification(`New message from ${username}`, {
+//                     body: "Click to open chat",
+//                     icon: "/chat-icon.png"
+//                 });
+//             }
+//         });
+//     }
+// }
 function maybeAddDateSeparator(container, createdAt) {
     const msgDate = new Date(createdAt);
     const dateKey = msgDate.toDateString();
