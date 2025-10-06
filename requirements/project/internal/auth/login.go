@@ -72,7 +72,8 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
     fmt.Println(username)
     // 
 	OnlineUsers[userId] = username
-	BroadcastUsers() // This now works without import cycle
+	BroadcastUserJoined(username) // Broadcast specific user joined event
+	BroadcastUsers() // Also broadcast full user list
 
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":   "ok",

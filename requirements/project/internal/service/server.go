@@ -29,7 +29,7 @@ func forumMux() *http.ServeMux {
 	// Cast to the interface type
 	auth.GlobalHub = hub
 	// root mux ====> i will check it roooooooooooot !!! >>
-	 
+
 	forumux.HandleFunc("/api/me", middleware.InjectUser(handler.FirststateHandler))
 	// <=========================|-|=============================>
 	// Her i will get filter post or post !!
@@ -47,23 +47,23 @@ func forumMux() *http.ServeMux {
 
 	// authontication mux
 	forumux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-    if r.Method == http.MethodPost {
-        auth.SubmitLogin(w, r)
-    } else {
-        // <====> her i will send spa !!
-        handler.RootHandler(w, r)
-    }
+		if r.Method == http.MethodPost {
+			auth.SubmitLogin(w, r)
+		} else {
+			// <====> her i will send spa !!
+			handler.RootHandler(w, r)
+		}
 	})
 	// ===== log out function !!
 	forumux.HandleFunc("/logout", auth.LogoutHandler)
 	// <=====================>
 	// her i will check login ||||| ///
 	forumux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-    if r.Method == http.MethodPost {
-        auth.SubmitRegister(w, r)
-    } else {
-        handler.RootHandler(w, r)
-    }
+		if r.Method == http.MethodPost {
+			auth.SubmitRegister(w, r)
+		} else {
+			handler.RootHandler(w, r)
+		}
 	})
 	forumux.HandleFunc("/post", middleware.InjectUser(handler.PostHandler))
 	forumux.HandleFunc("/newPost", middleware.AuthMidleware(handler.PostPostHandler))
@@ -72,7 +72,7 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/dislike", middleware.AuthMidleware(handler.DislikeHandler))
 	// comment mux
 	forumux.HandleFunc("/comment", middleware.AuthMidleware(handler.CommentHandler))
-	
+
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 	// WebSocket endpoint for private chat (protected)
 	forumux.HandleFunc("/room", hub.ServeWs)

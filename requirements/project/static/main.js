@@ -3,7 +3,7 @@ import {loginbuilding} from "./event.js"
 import { homeBuild } from "./buildhome.js";
 import { registerBuilding } from "./register.js";
 import { POST } from "./post.js";
-import { loadChatUI } from "./chatui.js";
+// import { loadChatUI } from "./chatui.js";
 import { NewPost } from "./newpost.js";
 
 
@@ -128,7 +128,7 @@ export async function showPage(page, user, id, currentPage, targetUser = null) {
   } else if (page === "Chat") {
     // Load private chat UI with target user
     // If no targetUser is provided, loadChatUI will show user selection
-    await loadChatUI(targetUser);
+    // await loadChatUI(targetUser);
   }
 
 }

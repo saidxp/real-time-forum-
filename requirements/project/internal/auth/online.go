@@ -18,14 +18,32 @@ func AddOnlineUser(username string) {
 	onlineUsersMu.Lock()
 	defer onlineUsersMu.Unlock()
 	onlineUsers[username] = true
-	// BroadcastUsers() // optional, if using WebSocket
+	// Broadcast user joined event
+	if GlobalHub != nil {
+		message := map[string]interface{}{
+			"type":     "user_joined",
+			"username": username,
+		}
+		if msgBytes, err := json.Marshal(message); err == nil {
+			GlobalHub.BroadcastToAllRooms(msgBytes)
+		}
+	}
 }
 
 func RemoveOnlineUser(username string) {
 	onlineUsersMu.Lock()
 	defer onlineUsersMu.Unlock()
 	delete(onlineUsers, username)
-	// BroadcastUsers() // optional, if using WebSocket
+	// Broadcast user left event
+	if GlobalHub != nil {
+		message := map[string]interface{}{
+			"type":     "user_left",
+			"username": username,
+		}
+		if msgBytes, err := json.Marshal(message); err == nil {
+			GlobalHub.BroadcastToAllRooms(msgBytes)
+		}
+	}
 }
 
 // ---------------------------

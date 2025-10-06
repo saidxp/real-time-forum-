@@ -46,7 +46,7 @@ func GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := 10 // default
+	limit := 50 // default - increased from 10 to 50
 	if limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil {
 			limit = parsedLimit

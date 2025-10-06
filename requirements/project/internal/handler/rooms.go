@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	// auth "forum/internal/auth"
 	db "forum/internal/db"
@@ -97,10 +98,11 @@ func NewRoom(name string, hub *Hub) *room {
 
 // ChatMessageData represents the structure of chat messages
 type ChatMessageData struct {
-	Type     string `json:"type"`
-	Name     string `json:"name"`
-	Message  string `json:"message"`
-	SenderID int    `json:"sender_id,omitempty"`
+	Type      string `json:"type"`
+	Name      string `json:"name"`
+	Message   string `json:"message"`
+	SenderID  int    `json:"sender_id,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
 }
 
 // Run handles all room events
@@ -119,66 +121,71 @@ func (r *room) Run() {
 			}
 
 		case msg := <-r.forward:
-			// Parse the message to save to database if it's a private chat
 			var chatMsg ChatMessageData
 			if err := json.Unmarshal(msg, &chatMsg); err == nil {
-				log.Printf("Processing message in room %s: %+v", r.name, chatMsg)
+				log.Printf("✅ Processing message in room %s: %+v", r.name, chatMsg)
 
-				if chatMsg.Type == "message" && strings.HasPrefix(r.name, "private_") {
-					// Extract usernames from room name
-					usernames := strings.Split(strings.TrimPrefix(r.name, "private_"), "_")
-					if len(usernames) == 2 {
-						log.Printf("Private chat between %s and %s", usernames[0], usernames[1])
+				switch chatMsg.Type {
+				case "message":
+					if strings.HasPrefix(r.name, "private_") {
+						usernames := strings.Split(strings.TrimPrefix(r.name, "private_"), "_")
+						if len(usernames) == 2 {
+							// Get sender ID - prioritize sender_id from message
+							var senderID int
+							if chatMsg.SenderID > 0 {
+								senderID = chatMsg.SenderID
+							} else {
+								senderID = r.getUserIDByUsername(chatMsg.Name)
+							}
 
-						// Get sender and receiver IDs
-						senderID := r.getUserIDByUsername(chatMsg.Name)
-						receiverName := usernames[0]
-						if receiverName == chatMsg.Name {
-							receiverName = usernames[1]
-						}
-						receiverID := r.getUserIDByUsername(receiverName)
+							// Determine receiver
+							receiverName := usernames[0]
+							if receiverName == chatMsg.Name {
+								receiverName = usernames[1]
+							}
+							receiverID := r.getUserIDByUsername(receiverName)
 
-						log.Printf("Sender: %s (ID: %d), Receiver: %s (ID: %d)",
-							chatMsg.Name, senderID, receiverName, receiverID)
+							log.Printf("💬 Sender: %s (ID: %d), Receiver: %s (ID: %d)",
+								chatMsg.Name, senderID, receiverName, receiverID)
 
-						if senderID > 0 && receiverID > 0 {
-							// Save message to database using db package function
+							if senderID <= 0 || receiverID <= 0 {
+								log.Printf("❌ Invalid user IDs - skipping save")
+								// Still forward the message even if save fails
+								break
+							}
+
+							// Save message to database
 							err := db.SaveChatMessage(senderID, receiverID, chatMsg.Message)
 							if err != nil {
-								log.Printf("Error saving chat message: %v", err)
+								log.Printf("❌ Error saving message: %v", err)
 							} else {
-								log.Printf("Message saved successfully")
+								log.Printf("✅ Message saved successfully")
+
+								// IMPORTANT: Retrieve the saved message to get the created_at timestamp
+								messages, err := db.GetChatMessages(senderID, receiverID, 1, 0)
+								if err == nil && len(messages) > 0 {
+									// Update the message with the actual created_at from database
+									chatMsg.CreatedAt = messages[0].CreatedAt.Format(time.RFC3339)
+									// Re-marshal with updated timestamp
+									if updatedMsg, err := json.Marshal(chatMsg); err == nil {
+										msg = updatedMsg
+									}
+								}
 							}
-						} else {
-							log.Printf("Invalid user IDs - cannot save message")
 						}
-					} else {
-						log.Printf("Invalid room name format: %s", r.name)
 					}
-				} else {
-					log.Printf("Not a private message or wrong format")
+				case "typing", "stop_typing":
+					log.Printf("⌨️ Typing indicator: %s from %s", chatMsg.Type, chatMsg.Name)
 				}
-			} else {
-				log.Printf("Error parsing message JSON: %v", err)
 			}
 
 			// Forward message to all users in the room
 			for usr := range r.users {
 				select {
 				case usr.recieve <- msg:
+					log.Printf("✅ Message forwarded to user %s", usr.name)
 				default:
-					// User channel is full, skip
-				}
-			}
-			
-			// Send notification to all global users
-			if chatMsg.Type == "message" {
-				for _, globalUser := range r.hub.globalUsers {
-					select {
-					case globalUser.recieve <- msg:
-					default:
-						// User channel full, skip
-					}
+					log.Printf("⚠️ User %s channel full, message dropped", usr.name)
 				}
 			}
 		}

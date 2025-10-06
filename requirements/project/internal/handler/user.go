@@ -38,14 +38,32 @@ func (c *user) read() {
 			return
 		}
 
-		log.Printf("Received message from %s: %s", c.name, string(msg))
+		log.Printf("✅ Received message from %s: %s", c.name, string(msg))
 
 		if c.room != nil {
-			select {
-			case c.room.forward <- msg:
-				log.Printf("Message forwarded to room")
-			default:
-				log.Printf("Room channel full, message dropped")
+			// Add sender ID to message before forwarding
+			var msgData map[string]interface{}
+			if err := json.Unmarshal(msg, &msgData); err == nil {
+				msgData["sender_id"] = c.userID
+				msgData["created_at"] = "" // Will be set by database
+				if modifiedMsg, err := json.Marshal(msgData); err == nil {
+					select {
+					case c.room.forward <- modifiedMsg:
+						log.Printf("✅ Message forwarded to room with sender_id %d", c.userID)
+					default:
+						log.Printf("⚠️ Room channel full, message dropped")
+					}
+				} else {
+					log.Printf("❌ Error marshaling modified message: %v", err)
+				}
+			} else {
+				// Fallback: forward original message
+				select {
+				case c.room.forward <- msg:
+					log.Printf("✅ Message forwarded to room (fallback)")
+				default:
+					log.Printf("⚠️ Room channel full, message dropped")
+				}
 			}
 		}
 	}

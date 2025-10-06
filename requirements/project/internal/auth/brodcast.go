@@ -23,9 +23,37 @@ func BroadcastUsers() {
 	}
 
 	payload, _ := json.Marshal(map[string]interface{}{
-		"type": "users",
-		"list": users,
+		"type": "users_update",
+		"users": users,
 	})
 
+	GlobalHub.BroadcastToAllRooms(payload)
+}
+
+// BroadcastUserJoined sends a user joined event
+func BroadcastUserJoined(username string) {
+	if GlobalHub == nil {
+		return
+	}
+	
+	payload, _ := json.Marshal(map[string]interface{}{
+		"type": "user_joined",
+		"username": username,
+	})
+	
+	GlobalHub.BroadcastToAllRooms(payload)
+}
+
+// BroadcastUserLeft sends a user left event
+func BroadcastUserLeft(username string) {
+	if GlobalHub == nil {
+		return
+	}
+	
+	payload, _ := json.Marshal(map[string]interface{}{
+		"type": "user_left",
+		"username": username,
+	})
+	
 	GlobalHub.BroadcastToAllRooms(payload)
 }

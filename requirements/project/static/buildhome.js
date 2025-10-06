@@ -1,24 +1,32 @@
  
 import { fetchPosts } from "./setevrntlisnter.js";
+import { creatchatisland, showChatIsland } from "./chatisland.js"
+
  
-import {loadChatUI}from "./chatui.js"
+// import {loadChatUI}from "./chatui.js"
 
 // build home it's separate from main !!
 
-  import { createFloatingChatIsland, destroyFloatingChatIsland } from "./ChatIsland.js";
+  // import { createFloatingChatIsland, destroyFloatingChatIsland } from "./ChatIsland.js";
 
 export async function homeBuild(user) {
   // ... your existing code ...
   
   // Create floating chat island if user is authenticated
   if (user.authenticated) {
-    createFloatingChatIsland((username) => {
-      // When user clicks on a username in the island
-      loadChatUI(username);
-    });
+    // createFloatingChatIsland((username) => {
+    //   // When user clicks on a username in the island
+    //   // loadChatUI(username);
+    // });
+    creatchatisland()
+    // Show the chat island after a short delay to ensure it's rendered
+    setTimeout(() => {
+      showChatIsland();
+    }, 500);
+    
   } else {
     // Destroy if user logs out
-    destroyFloatingChatIsland();
+    // destroyFloatingChatIsland();
   }
   
   // ... rest of your code ...

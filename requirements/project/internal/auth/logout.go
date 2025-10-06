@@ -11,8 +11,8 @@ import (
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	
-	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		http.NotFound(w, r)
 		return
 	}
 
@@ -49,8 +49,10 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	username := OnlineUsers[userId] // Get username before deleting
 	delete(OnlineUsers, userId)
-	BroadcastUsers() // This now works without import cycle
+	BroadcastUserLeft(username) // Broadcast specific user left event
+	BroadcastUsers() // Also broadcast full user list
 
 	// Clear the session cookie on the client side Front !!!
 	clearCookie := &http.Cookie{
