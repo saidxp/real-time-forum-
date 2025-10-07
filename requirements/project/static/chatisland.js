@@ -1,3 +1,18 @@
+// CHAT ISLAND FUNCTIONALITY - COMMENTED OUT
+// All chat island functionality has been split into separate modules:
+// - chat-core.js: Main initialization and lifecycle
+// - chat-websocket.js: WebSocket connections and messaging
+// - chat-ui.js: UI management and message display
+// - chat-users.js: User list and status management
+// - chat-utils.js: Utility functions and helpers
+
+// Import from the new modular files
+import { creatchatisland as createChatIsland, showChatIsland, hideChatIsland, destroyChatIsland } from './chat-core.js';
+
+// Re-export the functions to maintain compatibility
+export { createChatIsland as creatchatisland, showChatIsland, hideChatIsland, destroyChatIsland };
+
+/*
 import { loadUsersWithStatus, initUserWebSocket, closeUserWebSocket, getUserWebSocketStatus } from "./users.js"
 
 // Store interval IDs for cleanup
@@ -137,7 +152,6 @@ export function hideChatIsland() {
 }
 
 // Update the users list in the UI
-// Update the users list in the UI
 function updateUsersList(data) {
     const usersList = document.getElementById('chatUsersList');
     const usersCount = document.getElementById('onlineUsersCount');
@@ -261,10 +275,6 @@ let isTyping = false;
 let userOrderOverrides = new Map();
 let unreadCounts = new Map();
 
-
-
-
-
 // Start a chat with a specific user
 async function startChatWithUser(username) {
     console.log(`Starting chat with ${username}`);
@@ -272,8 +282,6 @@ async function startChatWithUser(username) {
     
     // Clear unread count for this user
     clearUnreadMessages(username);
-    
-
     
     try {
         // Get current user info
@@ -377,71 +385,6 @@ async function loadChatHistory(otherUserId, limit = 10, offset = 0) {
         messageOffset += messages.length;
     } catch (e) {
         console.error('Error loading chat history:', e);
-    }
-}
-
-// Load more messages (pagination)
-async function loadMoreMessages() {
-    if (!activeChatUserId) return;
-    
-    const loadMoreBtn = document.querySelector('.load-more-btn');
-    if (loadMoreBtn) {
-        loadMoreBtn.textContent = 'Loading...';
-        loadMoreBtn.disabled = true;
-    }
-    
-    try {
-        const res = await fetch(`/api/chat-messages?other_user_id=${activeChatUserId}&limit=10&offset=${messageOffset}`);
-        if (!res.ok) return;
-        
-        const data = await res.json();
-        const messages = data.messages || [];
-        const hasMore = data.hasMore || false;
-        
-        const messagesContainer = document.getElementById('chatMessagesContainer');
-        if (!messagesContainer) return;
-        
-        // Save scroll position
-        const scrollHeight = messagesContainer.scrollHeight;
-        
-        // Remove load more button
-        if (loadMoreBtn) {
-            loadMoreBtn.remove();
-        }
-        
-        // Add new load more button if needed
-        if (hasMore) {
-            const newLoadMoreBtn = document.createElement('button');
-            newLoadMoreBtn.className = 'load-more-btn';
-            newLoadMoreBtn.textContent = 'Load More Messages';
-            newLoadMoreBtn.onclick = () => loadMoreMessages();
-            messagesContainer.insertBefore(newLoadMoreBtn, messagesContainer.firstChild);
-        }
-        
-        // Add older messages at the top
-        messages.forEach(msg => {
-            const isSent = String(msg.sender_id) === String(currentUserId);
-            const messageEl = createMessageElement(msg, isSent);
-            // Insert after load more button (or at beginning)
-            const firstMessage = messagesContainer.querySelector('.message-bubble');
-            if (firstMessage) {
-                messagesContainer.insertBefore(messageEl, firstMessage);
-            } else {
-                messagesContainer.appendChild(messageEl);
-            }
-        });
-        
-        // Restore scroll position
-        messagesContainer.scrollTop = messagesContainer.scrollHeight - scrollHeight;
-        
-        messageOffset += messages.length;
-        
-    } catch (error) {
-        console.error('Error loading more messages:', error);
-        if (loadMoreBtn) {
-            loadMoreBtn.textContent = 'Load More Messages';
-            loadMoreBtn.disabled = false;
-        }
     }
 }
 
@@ -590,7 +533,6 @@ function setupChatWebSocket(user1, user2) {
                     // Only add unread count if not currently chatting with this user
                     if (data.name !== activeChatUsername) {
                         addUnreadMessage(data.name);
-                        // showBrowserNotification(data.name);
                     }
                 }
             } else if (data.type === 'typing') {
@@ -845,47 +787,9 @@ function throttle(func, delay) {
     };
 }
 
-// Clean up function to close WebSocket when chat island is removed
+// Stub function - actual implementation is in the modular files
 export function destroyChatIsland() {
-    // Clear intervals
-    if (wsStatusInterval) {
-        clearInterval(wsStatusInterval);
-        wsStatusInterval = null;
-    }
-    if (userRefreshInterval) {
-        clearInterval(userRefreshInterval);
-        userRefreshInterval = null;
-    }
-    
-    // Clear typing timer
-    if (typingTimer) {
-        clearTimeout(typingTimer);
-        typingTimer = null;
-    }
-    
-    // Close chat WebSocket
-    if (chatWebSocket) {
-        try {
-            chatWebSocket.close();
-        } catch (e) {
-            console.error('Error closing chat WebSocket:', e);
-        }
-        chatWebSocket = null;
-    }
-    
-    // Close user WebSocket
-    closeUserWebSocket();
-    
-    // Reset state
-    activeChatUsername = null;
-    activeChatUserId = null;
-    chatReconnectAttempts = 0;
-    
-    // Remove chat section
-    const chatSection = document.querySelector('.chat-island');
-    if (chatSection) {
-        chatSection.remove();
-    }
+    console.log('destroyChatIsland called - functionality moved to modular files');
 }
 let lastMessageDate = null;
 
@@ -959,25 +863,7 @@ function updateUserBadge(username) {
         if (badge) badge.remove();
     }
 }
-// function showBrowserNotification(username) {
-//     if (document.hasFocus()) return; // Don't show if user is on the page
 
-//     if (Notification.permission === "granted") {
-//         new Notification(`New message from ${username}`, {
-//             body: "Click to open chat",
-//             icon: "/chat-icon.png" // optional
-//         });
-//     } else if (Notification.permission !== "denied") {
-//         Notification.requestPermission().then(permission => {
-//             if (permission === "granted") {
-//                 new Notification(`New message from ${username}`, {
-//                     body: "Click to open chat",
-//                     icon: "/chat-icon.png"
-//                 });
-//             }
-//         });
-//     }
-// }
 function maybeAddDateSeparator(container, createdAt) {
     const msgDate = new Date(createdAt);
     const dateKey = msgDate.toDateString();
@@ -1008,3 +894,4 @@ function maybeAddDateSeparator(container, createdAt) {
         container.appendChild(separator);
     }
 }
+*/

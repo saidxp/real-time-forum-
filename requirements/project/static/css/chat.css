@@ -1,22 +1,68 @@
 /* Chat Island Main Container */
 .chat-island {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
     width: 700px;
     height: 500px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 9999 !important;
     overflow: hidden;
     display: none; /* Hidden by default */
     flex-direction: column;
+    transition: height 0.3s ease;
 }
 
 /* Show chat island when visible */
 .chat-island.visible {
     display: flex;
+}
+
+/* Minimized state - Facebook style */
+.chat-island.minimized {
+    height: 60px !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+}
+
+.chat-island.minimized .chat-users-section,
+.chat-island.minimized .chat-messages-section {
+    display: none !important;
+}
+
+.chat-island.minimized .chat-island-container {
+    grid-template-rows: auto !important;
+    grid-template-columns: 1fr !important;
+    height: 60px !important;
+}
+
+.chat-island.minimized .chat-island-header {
+    grid-column: 1 !important;
+    cursor: pointer;
+    height: 60px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.chat-minimize-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    min-width: 30px;
+    text-align: center;
+}
+
+.chat-minimize-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 /* User Status Indicators */
@@ -355,6 +401,9 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .user-status {
@@ -372,20 +421,57 @@
 }
 
 .unread-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: #ef4444;
+    background: #dc2626;
     color: white;
-    border-radius: 50%;
-    width: 20px;
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 20px;
     height: 20px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    min-width: 20px;
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+}
+
+.total-unread-badge {
+    background: #dc2626;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-left: 8px;
+    animation: pulse 2s infinite;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+}
+
+.user-item.has-unread {
+    background: #fef3f2 !important;
+    border-left: 3px solid #ef4444 !important;
+}
+
+.user-item.has-unread:hover {
+    background: #fee2e2 !important;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
 }
 
 /* Chat Messages Section */
@@ -557,13 +643,29 @@
     background: #94a3b8;
 }
 
+/* Ensure chat island stays on top of all page content */
+.chat-island {
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.chat-island * {
+    box-sizing: border-box !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .chat-island {
-        width: calc(100vw - 20px);
-        height: 80vh;
-        right: 10px;
-        bottom: 10px;
+        width: calc(100vw - 20px) !important;
+        height: 80vh !important;
+        right: 10px !important;
+        bottom: 10px !important;
+    }
+    
+    .chat-island.minimized {
+        width: 300px !important;
+        height: 60px !important;
     }
     
     .chat-island-container {
@@ -699,3 +801,19 @@
   }
 }
  
+.user-item {
+  position: relative;
+}
+
+.unread-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: red;
+  color: white;
+  font-size: 11px;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}

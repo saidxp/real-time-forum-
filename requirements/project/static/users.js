@@ -54,25 +54,35 @@ export async function getCurrentUser(){
     }
 }
 
+// Rate limiting for API calls
+let lastApiCall = 0;
+const MIN_API_INTERVAL = 1000; // 1 second between API calls
+
 // Load users with online status (excluding current user)
 export async function loadUsersWithStatus(){
     try {
-        // Add delay to prevent rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Rate limiting check
+        const now = Date.now();
+        const timeSinceLastCall = now - lastApiCall;
+        if (timeSinceLastCall < MIN_API_INTERVAL) {
+            const waitTime = MIN_API_INTERVAL - timeSinceLastCall;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        lastApiCall = Date.now();
         
         // Fetch current user first
         const currentUserData = await getCurrentUser();
         if (!currentUserData) return [];
         
-        // Small delay between requests
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Delay between requests
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Fetch all users
         const allUsersData = await loadAllUsers();
         if (!allUsersData) return [];
         
-        // Small delay between requests
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Delay between requests
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Fetch online users
         const onlineUsersData = await loadOnlineUsers();
@@ -108,14 +118,16 @@ export function initUserWebSocket(onUsersUpdate) {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/room?room=users_lobby`;
+    const host = window.location.hostname;
+    const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
+    const wsUrl = `${protocol}//${host}:${port}/room?room=users_lobby`;
     
     console.log('🔌 Connecting to user WebSocket:', wsUrl);
     
     try {
         userWebSocket = new WebSocket(wsUrl);
         
-        userWebSocket.onopen = () => {
+        userWebSocket.addEventListener('open', () => {
             console.log('✅ User WebSocket connected');
             reconnectAttempts = 0;
             
@@ -124,13 +136,13 @@ export function initUserWebSocket(onUsersUpdate) {
                 if (users && onUsersUpdate) {
                     onUsersUpdate(users);
                 }
-            });
-        };
+            }).catch(err => console.error('Error loading initial users:', err));
+        });
         
         let lastRefresh = 0;
-        const REFRESH_THROTTLE = 2000; // 2 seconds minimum between refreshes
+        const REFRESH_THROTTLE = 5000; // 5 seconds minimum between refreshes
         
-        userWebSocket.onmessage = (event) => {
+        userWebSocket.addEventListener('message', (event) => {
             try {
                 const data = JSON.parse(event.data);
                 console.log('📨 WebSocket message received:', data);
@@ -156,18 +168,18 @@ export function initUserWebSocket(onUsersUpdate) {
                         }).catch(err => {
                             console.log('Rate limited, skipping refresh');
                         });
-                    }, 200);
+                    }, 500);
                 }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
             }
-        };
+        });
         
-        userWebSocket.onerror = (error) => {
+        userWebSocket.addEventListener('error', (error) => {
             console.error('❌ User WebSocket error:', error);
-        };
+        });
         
-        userWebSocket.onclose = (event) => {
+        userWebSocket.addEventListener('close', (event) => {
             console.log('🔌 User WebSocket closed:', event.code, event.reason);
             
             // Attempt to reconnect
@@ -180,7 +192,7 @@ export function initUserWebSocket(onUsersUpdate) {
             } else {
                 console.log('❌ Max reconnection attempts reached');
             }
-        };
+        });
         
     } catch (error) {
         console.error('Failed to create WebSocket:', error);
