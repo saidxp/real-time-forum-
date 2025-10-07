@@ -19,13 +19,10 @@ function el(tag, className = "", inner = "") {
 }
 
 export async function fetchPosts(filter = "", page=1) {
-
   try {
     //const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}`);
     const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}&page=${page}`);
     const data = await res.json();
-    console.log("Fetched data:", data);
-
     // Still Need To Fix It's No Posts When I Want Her Just Some Handlling
     // Normalize Posts Array From Several Possible Shapes <<==>>
     const pagination = {

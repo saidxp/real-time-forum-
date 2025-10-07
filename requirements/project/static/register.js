@@ -1,7 +1,5 @@
 import { showPage } from "./main.js";
-
 // import { destroyFloatingChatIsland } from "./ChatIsland.js";
-
 export async function registerBuilding(user) {
   // destroyFloatingChatIsland();
   if (!document.querySelector('link[href*="forms.css"]')) {
@@ -11,24 +9,20 @@ export async function registerBuilding(user) {
     formsCSS.href = '/static/css/forms.css';
     document.head.appendChild(formsCSS);
   }
-
   const mainContent = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
   const pagination = document.querySelector('.pagination');
   const footerContainer = document.querySelector('.footer');
-
   if (mainContent) mainContent.innerHTML = "";
   if (mobileHeader) mobileHeader.innerHTML = "";
   if (pagination) pagination.remove();
   if (footerContainer) footerContainer.innerHTML = "";
-
   function createEl(tag, className = "", html = "") {
     const el = document.createElement(tag);
     if (className) el.className = className;
     if (html) el.innerHTML = html;
     return el;
   }
-
   if (mobileHeader) {
     mobileHeader.innerHTML = `
       <div class="header__logo">
@@ -46,9 +40,7 @@ export async function registerBuilding(user) {
       </div>
     `;
   }
-
   const container = createEl("div", "container");
-
   const form = createEl("form");
   form.action = "/register";
   form.method = "POST";

@@ -1,4 +1,3 @@
-// <=============== POST ===================>
 import { showPage } from "./main.js";
 
 export async function POST(id, user, page=1) {
