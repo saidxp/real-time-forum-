@@ -109,11 +109,34 @@ export function creatchatisland() {
             if (user.authenticated) {
                 window.currentUsername = user.Username || user.username;
                 window.currentUserId = user.userId || user.Id || user.id || user.ID;
+                setupGlobalNotifications();
             }
         } catch (e) {
             console.log('User not authenticated');
         }
     }).catch(err => console.log('User not authenticated'));
+
+    function setupGlobalNotifications() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
+        const wsUrl = `${protocol}//${host}:${port}/room?user1=${window.currentUsername}&user2=*&username=${window.currentUsername}`;
+        
+        window.globalWS = new WebSocket(wsUrl);
+        
+        window.globalWS.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'message' && data.name !== window.currentUsername) {
+                    import('./chat-users.js').then(module => {
+                        module.addUnreadMessage(data.name);
+                        module.showNotification(data.name);
+                        module.updateTotalUnreadBadge();
+                    });
+                }
+            } catch (e) {}
+        };
+    }
 
     // Update WebSocket status indicator periodically
     wsStatusInterval = setInterval(updateWebSocketStatus, 10000);

@@ -15,23 +15,23 @@ window.testNotification = function(username) {
 // Test function to simulate message from another user
 window.simulateMessage = function(fromUser, message) {
     console.log(`Simulating message from ${fromUser}: ${message}`);
-    const data = {
-        type: 'message',
-        name: fromUser,
-        message: message,
-        sender_id: 999,
-        created_at: new Date().toISOString()
-    };
     
     // Only add notification if not from active chat
     if (fromUser !== window.activeChatUsername) {
         addUnreadMessage(fromUser);
+        znotif(fromUser);
         console.log(`📢 Added notification for ${fromUser}`);
     } else {
         console.log(`📢 Message from active chat, no notification`);
     }
     
     updateTotalUnreadBadge();
+};
+
+// Quick test function
+window.testNotificationPopup = function() {
+    console.log('Testing notification popup...');
+    znotif('TestUser');
 };
 
 // Update the users list in the UI
@@ -266,109 +266,20 @@ export function updateTotalUnreadBadge() {
 }
 
 
-export function znotif(username) {
-    // Show desktop notification
-    showDesktopNotification(username);
+export function showNotification(username) {
+    // Create popup
+    const popup = document.createElement('div');
+    popup.style.cssText = 'position:fixed;top:20px;right:20px;background:white;padding:15px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;border-left:4px solid #2563eb';
+    popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">💬</span><div><strong>${username}</strong><br><small>New message</small></div><button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer">×</button></div>`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 4000);
     
-    // Show in-app notification popup
-    showInAppNotification(username);
-    
-    // Update badge
-    updateNotificationBadge(username);
-    
-    // Play notification sound
-    playNotificationSound();
-}
-
-function showDesktopNotification(username) {
+    // Desktop notification
     if (Notification.permission === 'granted') {
-        new Notification(`New message from ${username}`, {
-            body: 'You have a new message',
-            icon: '/static/svg/logo.svg',
-            tag: username
-        });
+        new Notification(`New message from ${username}`);
     } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                new Notification(`New message from ${username}`, {
-                    body: 'You have a new message',
-                    icon: '/static/svg/logo.svg',
-                    tag: username
-                });
-            }
-        });
+        Notification.requestPermission();
     }
 }
 
-function showInAppNotification(username) {
-    // Remove existing notification
-    const existing = document.querySelector('.notification-popup');
-    if (existing) existing.remove();
-    
-    // Create notification popup
-    const notification = document.createElement('div');
-    notification.className = 'notification-popup';
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-icon">💬</span>
-            <div class="notification-text">
-                <strong>${username}</strong>
-                <p>New message</p>
-            </div>
-            <button class="notification-close">×</button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-    
-    // Close button
-    notification.querySelector('.notification-close').onclick = () => {
-        notification.remove();
-    };
-}
-
-function updateNotificationBadge(username) {
-    if (!window.unreadCounts) window.unreadCounts = new Map();
-    const count = window.unreadCounts.get(username) || 0;
-
-    const usersList = document.getElementById('chatUsersList');
-    if (!usersList) return;
-
-    const userItem = [...usersList.querySelectorAll('.user-item')]
-        .find(item => item.dataset.username === username);
-    if (!userItem) return;
-
-    const userNameEl = userItem.querySelector('.user-name');
-    if (!userNameEl) return;
-
-    let badge = userNameEl.querySelector('.unread-badge');
-    if (count > 0) {
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'unread-badge';
-            userNameEl.appendChild(badge);
-        }
-        badge.textContent = count;
-        userItem.classList.add('has-unread');
-    } else {
-        if (badge) badge.remove();
-        userItem.classList.remove('has-unread');
-    }
-}
-
-function playNotificationSound() {
-    try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
-    } catch (e) {
-        // Silently fail if audio doesn't work
-    }
-}
+window.testNotification = () => showNotification('TestUser');

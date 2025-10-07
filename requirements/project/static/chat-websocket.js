@@ -1,5 +1,5 @@
 import { displayMessage, scrollToBottom, showTypingIndicator, hideTypingIndicator } from "./chat-ui.js"
-import { updateUserListOrder, addUnreadMessage, updateTotalUnreadBadge,znotif } from "./chat-users.js"
+import { updateUserListOrder, addUnreadMessage, updateTotalUnreadBadge, showNotification } from "./chat-users.js"
 
 // WebSocket state
 let chatReconnectAttempts = 0;
@@ -44,7 +44,7 @@ export function setupChatWebSocket(user1, user2) {
             if (data.type === 'message') {
                 const isSent = data.name === window.currentUsername;
                 
-                // Only display message if it belongs to the current active chat
+                // Display message in active chat
                 if (isSent || data.name === window.activeChatUsername) {
                     hideTypingIndicator();
                     
@@ -54,25 +54,21 @@ export function setupChatWebSocket(user1, user2) {
                         created_at: data.created_at || new Date().toISOString()
                     };
                     
-                    console.log('💬 Displaying message in active chat:', { message, isSent, activeChatUsername: window.activeChatUsername });
                     displayMessage(message, isSent);
                     scrollToBottom();
                 }
                 
-                // Always update user list order for any message
+                // Show notification for any received message (not sent by current user)
+                if (!isSent) {
+                    addUnreadMessage(data.name);
+                    showNotification(data.name);
+                }
+                
+                // Update user list order
                 if (isSent) {
                     updateUserListOrder(window.activeChatUsername, data.message);
                 } else {
                     updateUserListOrder(data.name, data.message);
-                    // Only add unread count for receiver (not sender)
-                    console.log(`📢 Message from: ${data.name}, Active chat: ${window.activeChatUsername || 'none'}`);
-                    if (data.name !== window.activeChatUsername) {
-                        addUnreadMessage(data.name);
-                        znotif(data.name);
-                        console.log(`📢 ✅ Added notification for ${data.name}`);
-                    } else {
-                        console.log(`📢 ❌ No notification - message from active chat`);
-                    }
                 }
                 
                 // Always update notification badges after any message
