@@ -2,16 +2,7 @@
 import { fetchPosts } from "./setevrntlisnter.js";
 import { creatchatisland, showChatIsland } from "./chatisland.js"
 
- 
-// import {loadChatUI}from "./chatui.js"
-
-// build home it's separate from main !!
-
-  // import { createFloatingChatIsland, destroyFloatingChatIsland } from "./ChatIsland.js";
-
 export async function homeBuild(user) {
-  // ... your existing code ...
-  
   // Create floating chat island if user is authenticated
   if (user.authenticated) {
     // createFloatingChatIsland((username) => {
@@ -24,19 +15,11 @@ export async function homeBuild(user) {
       showChatIsland();
     }, 500);
     
-  } else {
-    // Destroy if user logs out
-    // destroyFloatingChatIsland();
-  }
-  
-  // ... rest of your code ...
-
+  } 
   const HOWA = document.getElementById('chat-container')
   if (HOWA) {
     HOWA.remove()
   }
- 
-   
   // check Authenticatec evey time to be sure the user it's authenticated 
   const ii = document.getElementById("Css")
   if (ii) {
@@ -86,20 +69,13 @@ export async function homeBuild(user) {
   header.appendChild(logoDiv);
   // User actions container
   const actionsDiv = createEl("div", "user_actions--header");
-  //nst button = createEl("button","chat",`chat`)
- //tionsDiv.appendChild(button)
-
-  // Filter nav
   const nav = createEl("nav", "profile-nav");
   const ul = createEl("ul");
   const liDropdown = createEl("li", "profile-dropdown");
   const filterDiv = createEl("div", "header__filter-label");
   filterDiv.innerHTML = `Filter <img src="/static/svg/filter.svg" alt="Filter by Categories">`;
   liDropdown.appendChild(filterDiv);
-  //tionsDiv.appendChild(button)
-//tton.addEventListener("click",()=>{
-//adChatUI()
-//
+
   const filterUl = createEl("ul");
   if (user.fileds) {
     Object.keys(user.fileds).forEach(key => {
@@ -142,11 +118,6 @@ export async function homeBuild(user) {
           </div>
           <ul>
             <li>
-              <a id ="Chat" class="header__profile-link">
-                <img id="Chat" src="/static/svg/chat.svg" class="header__profile-icon">Forum chat
-              </a>
-            </li>
-            <li>
               <a href="#" id ="Out" class="header__profile-link">
                 <img src="/static/svg/log-out.svg" class="header__profile-icon" data-action="logout"> Logout
               </a>
@@ -156,10 +127,6 @@ export async function homeBuild(user) {
       </ul>
     `;
     actionsDiv.appendChild(profileNav);
-    // <==========> her i will add event listner about (filter)
-    /// her >>>> 
-    //  <==================================================>
-    //  Addeventlistnerandpost();
   } else {
     // Her There Is The The Logout Out Stat I Need to lisntnign to it !!  
     const authLinks = createEl("div", "header__auth-links", `
@@ -174,7 +141,6 @@ export async function homeBuild(user) {
   // build hero !! 
   // Get <===> Post <==!!==>
   await fetchPosts("")
-  // I THIK I DO IT HHHHHHHHH I SOLVE THE PROBLEM !! OF THE ASYNC JS IT'S CRAZY IT'S NOT POINT TO THE PORBBLEM IN THE FIRST !!
   buildHero(user)
   const foot = document.getElementById("333")
   if (foot) {

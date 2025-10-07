@@ -22,9 +22,6 @@ export async function fetchPosts(filter = "", page=1) {
 
   try {
     //const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}`);
-    console.log("Her Im At The Fetch ....")
-    console.log(filter)
-    console.log("==================")
     const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}&page=${page}`);
     const data = await res.json();
     console.log("Fetched data:", data);
@@ -39,11 +36,6 @@ export async function fetchPosts(filter = "", page=1) {
       "PrevPage" : data.CurrentPage -1 ,
     }
     let postsList = normalizePosts(data) 
-    console.log("========At post list========")
-    console.log(postsList)
-    console.log("this the length")
-    console.log(postsList.length)
-    console.log("==================")
     const postsContainer = document.querySelector(".main-content__posts");
     if (!postsContainer) {
       console.warn("No .main-content__posts container found.");
@@ -97,7 +89,7 @@ export async function fetchPosts(filter = "", page=1) {
 
       const section = el("section");
       const pContent = el("p", "clamp");
-      pContent.textContent = Content; // keep as text for safety
+      pContent.textContent = Content;  
       section.appendChild(pContent);
 
       topDiv.appendChild(postHeadWrap);
@@ -133,8 +125,6 @@ export async function fetchPosts(filter = "", page=1) {
       `;
       // <===================================> <!-!>
       const readMoreDiv = el("div", "ReadMore");
-      //readMoreDiv.innerHTML = `<a href="/post?Id=${Id}" class="readmore" id="btn2">Read More</a>`;
-      //readMoreDiv.innerHTML = `<a href="#" class="readmore" id="btn2">Read More</a>`;
       readMoreDiv.innerHTML = `<a href="#" class="readmore" data-id="${Id}">Read More</a>`;
 
       postbot.appendChild(smallActions);
@@ -194,7 +184,7 @@ function renderPagination(pagination) {
     link.addEventListener("click", e => {
       e.preventDefault();
       const page = Number(link.dataset.page);
-      fetchPosts("", page); // keep current filter if you have one
+      fetchPosts("", page);
     });
   });
 }

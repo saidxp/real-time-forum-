@@ -2,7 +2,7 @@
 let userWebSocket = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
-const RECONNECT_DELAY = 3000; // 3 seconds
+const RECONNECT_DELAY = 3000;  
 
 // Load all users via REST API
 export async function loadAllUsers(){
@@ -56,8 +56,7 @@ export async function getCurrentUser(){
 
 // Rate limiting for API calls
 let lastApiCall = 0;
-const MIN_API_INTERVAL = 1000; // 1 second between API calls
-
+const MIN_API_INTERVAL = 1000; 
 // Load users with online status (excluding current user)
 export async function loadUsersWithStatus(){
     try {
@@ -69,14 +68,11 @@ export async function loadUsersWithStatus(){
             await new Promise(resolve => setTimeout(resolve, waitTime));
         }
         lastApiCall = Date.now();
-        
         // Fetch current user first
         const currentUserData = await getCurrentUser();
         if (!currentUserData) return [];
-        
         // Delay between requests
         await new Promise(resolve => setTimeout(resolve, 200));
-        
         // Fetch all users
         const allUsersData = await loadAllUsers();
         if (!allUsersData) return [];
@@ -120,15 +116,11 @@ export function initUserWebSocket(onUsersUpdate) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
     const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
-    const wsUrl = `${protocol}//${host}:${port}/room?room=users_lobby`;
-    
-    console.log('🔌 Connecting to user WebSocket:', wsUrl);
-    
+    const wsUrl = `${protocol}//${host}:${port}/room?room=users_lobby`;    
     try {
         userWebSocket = new WebSocket(wsUrl);
         
         userWebSocket.addEventListener('open', () => {
-            console.log('✅ User WebSocket connected');
             reconnectAttempts = 0;
             
             // Request initial user list with status
@@ -145,20 +137,14 @@ export function initUserWebSocket(onUsersUpdate) {
         userWebSocket.addEventListener('message', (event) => {
             try {
                 const data = JSON.parse(event.data);
-                console.log('📨 WebSocket message received:', data);
-                
                 // Throttle user list refreshes to prevent rate limiting
                 const now = Date.now();
                 if (now - lastRefresh < REFRESH_THROTTLE) {
-                    console.log('⏳ Throttling user list refresh');
                     return;
                 }
-                
                 // Handle different message types
                 if (data.type === 'users_update' || data.type === 'user_joined' || data.type === 'user_left') {
                     lastRefresh = now;
-                    console.log('🔄 Refreshing user list');
-                    
                     // Add delay before refresh to prevent rate limiting
                     setTimeout(() => {
                         loadUsersWithStatus().then(users => {
@@ -180,7 +166,7 @@ export function initUserWebSocket(onUsersUpdate) {
         });
         
         userWebSocket.addEventListener('close', (event) => {
-            console.log('🔌 User WebSocket closed:', event.code, event.reason);
+            console.log('User WebSocket closed:', event.code, event.reason);
             
             // Attempt to reconnect
             if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -204,13 +190,12 @@ export function initUserWebSocket(onUsersUpdate) {
 // Close WebSocket connection
 export function closeUserWebSocket() {
     if (userWebSocket) {
-        console.log('🔌 Closing user WebSocket');
         userWebSocket.close();
         userWebSocket = null;
     }
 }
 
-// Send a message through WebSocket
+// Send a Message Through WebSocket !! \\ 
 export function sendUserWebSocketMessage(message) {
     if (userWebSocket && userWebSocket.readyState === WebSocket.OPEN) {
         userWebSocket.send(JSON.stringify(message));
@@ -220,11 +205,9 @@ export function sendUserWebSocketMessage(message) {
         return false;
     }
 }
-
-// Get WebSocket connection status
+// <===> \\  
 export function getUserWebSocketStatus() {
     if (!userWebSocket) return 'disconnected';
-    
     switch (userWebSocket.readyState) {
         case WebSocket.CONNECTING:
             return 'connecting';

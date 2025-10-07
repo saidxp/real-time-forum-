@@ -41,6 +41,7 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/api/user-by-username", handler.GetUserByUsernameHandler)
 	forumux.HandleFunc("/api/recent-chats", handler.GetRecentChatsHandler)
 	forumux.HandleFunc("/api/unread-count", handler.GetUnreadCountHandler)
+
 	forumux.HandleFunc("/api/last-messages", middleware.InjectUser(handler.GetLastMessagesHandler))
 
 	// <=========================|-|=============================>

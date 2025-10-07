@@ -94,10 +94,22 @@ func (c *user) write() {
 
 func GetLastMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 	// Get current user from session (NOT from context)
 	sessionCookie, err := r.Cookie("session_token")
 	if err != nil {
@@ -122,7 +134,6 @@ func GetLastMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"last_messages": lastMessages,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

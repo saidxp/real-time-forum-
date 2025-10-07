@@ -50,7 +50,6 @@ export async function NewPost(categories = [], user) {
                 <div class="username">${user.Username || ''}</div>
               </div>
               <ul>
-               <li><a id ="Chat"> <img id="Chat" src="/static/svg/chat.svg" class="header__profile-icon">Forum chat </a> </li>
                 <li><a id ="Out"> <img src="/static/svg/log-out.svg" /> Logout</a></li>
               </ul>
             </li>

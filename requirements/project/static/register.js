@@ -29,7 +29,6 @@ export async function registerBuilding(user) {
     return el;
   }
 
-  // ✅ wrap HTML inside backticks
   if (mobileHeader) {
     mobileHeader.innerHTML = `
       <div class="header__logo">
@@ -141,7 +140,7 @@ export async function registerBuilding(user) {
       errorMessage.textContent = "Passwords do not match.";
       return;
     }
-    console.log({ username, age , gender, firstName, lastName, email, password, confirmpassword });
+    //console.log({ username, age , gender, firstName, lastName, email, password, confirmpassword });
     try {
       const res = await fetch("/register", {
         method: "POST",
@@ -150,7 +149,7 @@ export async function registerBuilding(user) {
           username,
           age : Number(age),
           gender,
-          first_name: firstName,   // <-- now matches Go
+          first_name: firstName,
           last_name: lastName,
           email,
           password,
@@ -158,9 +157,7 @@ export async function registerBuilding(user) {
         })
 
       });
-
       const result = await res.json();
-
       if (res.ok && result.status === "ok") {
         errorMessage.style.display = "none";
         const userRes = await fetch("/api/me");

@@ -13,9 +13,22 @@ import (
 // GetChatMessagesHandler handles HTTP requests for chat messages
 func GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 
 	// Get current user from session
 	sessionCookie, err := r.Cookie("session_token")
@@ -80,10 +93,22 @@ func GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 // GetUserByUsernameHandler gets user ID by username for chat
 func GetUserByUsernameHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 	username := r.URL.Query().Get("username")
 	if username == "" {
 		http.Error(w, "username required", http.StatusBadRequest)
@@ -112,10 +137,22 @@ func GetUserByUsernameHandler(w http.ResponseWriter, r *http.Request) {
 // GetRecentChatsHandler gets recent chat users for the current user
 func GetRecentChatsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 	// Get current user from session
 	sessionCookie, err := r.Cookie("session_token")
 	if err != nil {
@@ -145,11 +182,23 @@ func GetRecentChatsHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetUnreadCountHandler gets unread message count for current user
 func GetUnreadCountHandler(w http.ResponseWriter, r *http.Request) {
+	
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 	// Get current user from session
 	sessionCookie, err := r.Cookie("session_token")
 	if err != nil {

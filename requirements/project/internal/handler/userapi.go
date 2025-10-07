@@ -10,9 +10,22 @@ import (
 // OnlineUsersHandler returns list of online users for chat selection
 func OnlineUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -43,6 +56,23 @@ func OnlineUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 // AllUsersHandler returns list of all registered usernames
 func AllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return

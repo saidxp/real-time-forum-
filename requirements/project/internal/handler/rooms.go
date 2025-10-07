@@ -222,6 +222,23 @@ var upgrader = &websocket.Upgrader{
 
 // ServeWs upgrades HTTP requests to WebSocket connections for private chat
 func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, req, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := req.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, req, "/unauthorized", http.StatusSeeOther)
+        return
+    }
 	roomName := req.URL.Query().Get("room")
 	user1 := req.URL.Query().Get("user1")
 	user2 := req.URL.Query().Get("user2")

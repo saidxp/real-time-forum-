@@ -17,9 +17,6 @@ export async function POST(id, user, page=1) {
   const footerEl = document.querySelector('.footer');
   const container = document.querySelector(".pagination");
   container.style.display = "none"
-
-  console.log("Im At Post And I will See It Howa", user.comments)
-
   const existingHeader = document.querySelector('header.header');
   if (existingHeader) existingHeader.remove();
   if (mobileHeader) {
@@ -38,10 +35,6 @@ export async function POST(id, user, page=1) {
                 <div class="username">${user.Username || ''}</div>
               </div>
               <ul>
-                <li>
-              <a id ="Chat" >
-                <img id="Chat" src="/static/svg/chat.svg" >Forum chat
-              </a>
             </li>
                 <li><a id ="Out"> <img src="/static/svg/log-out.svg" /> Logout</a></li>
               </ul>
@@ -204,7 +197,6 @@ const commentFormHTML = `
         });
         if (!res.ok) throw new Error('Failed to submit like');
         const result = await res.json();
-        console.log('Like response:', result.data);
         updateLikeDislikeUI(result.data);
         
       } catch (err) {
@@ -225,9 +217,6 @@ const commentFormHTML = `
         });
         if (!res.ok) throw new Error('Failed to submit dislike');
         const result = await res.json();
-        console.log("howa")
-        console.log('Dislike response:', result.data);
-        // Update the UI with new like/dislike counts
         updateLikeDislikeUI(result.data);
         
       } catch (err) {
@@ -256,8 +245,6 @@ const commentFormHTML = `
       `;
     }
   }
-
-  //if (main) main.innerHTML = postHTML + commentFormHTML + commentsHTML + paginationHTML;
   // === Footer ===
   if (footerEl) {
     footerEl.innerHTML = `<div class="footer-container">
@@ -271,19 +258,10 @@ const commentFormHTML = `
         e.preventDefault();
         const page = parseInt(btn.dataset.page);
         const postId = btn.dataset.postId;
-        
-        console.log(`🔄 Pagination clicked!`);
-        console.log(`📄 Loading page: ${page}`);
-        console.log(`🎯 For post ID: ${postId}`);
-        console.log(`🌐 Will send request to: /post?Id=${postId}&page=${page}`);
-        
-        // Show loading state while fetching .....
         if (main) {
           // styling loading 
           main.innerHTML = `<p style="text-align:center; margin:2rem;">Loading page ${page}...</p>`;
         }
-        
-        // Call POST function with new page
         /// HER I WILL USE SHOW PAGE FOR REFRECH HANDLING !!
         await POST(postId, user, page);
       });
@@ -294,17 +272,12 @@ const commentFormHTML = `
   if (formComment) {
     formComment.addEventListener("submit", async (e) => {
       e.preventDefault();
-      console.log("howa hada libghina hna o daba ")
-      console.log(Pagination.curent)
       let curent = Pagination.curent
       let post_id = post.Id
-      console.log("how hada li bghina o mkhlina li hnina omandiro so9 rosnna waaayaayii ")
       const formData = new FormData(formComment);
       /// I Add To Object The Current Page !
       formData.append("currentPage" ,curent)
       //formData.append("Post_id", idPost)
-      // <==|<--|-->|==> 
-      console.log(formData)
       try {
         const res = await fetch("/comment", { method: "POST", body: formData });
         if (!res.ok) throw new Error("Failed to submit comment");

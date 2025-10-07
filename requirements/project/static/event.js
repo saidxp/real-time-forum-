@@ -131,17 +131,7 @@ export async function loginbuilding(user) {
       const result = await res.json();
       console.log(result)
       if (res.ok && result.status === "ok") {
-        //localStorage.setItem("authToken", result.token);
-        //localStorage.setItem("username", result.username);
-        console.log(result.token)
-        console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
         errorMessage.style.display = "none";
-        // her i will build home page again with result !!
-        // IMPORTANT: Clean up login header before building home
-        //if (mobileHeader) {
-        //mobileHeader.innerHTML = "";
-        //mobileHeader.style.display = "none"; // Hide it for home page
-        //}
         if (mobileHeader) {
           mobileHeader.innerHTML = "";
           mobileHeader.style.display = "none";
@@ -154,9 +144,6 @@ export async function loginbuilding(user) {
         if (css1) {
           css1.remove()
         }
-        //const res = await fetch("/api/me");
-        //const user = await res.json();
-        // It's try to ======>
         // <=======================> 
         await showPage("home");
         sessionStorage.setItem("currentPage", "home");

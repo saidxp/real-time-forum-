@@ -229,10 +229,7 @@ sendBtn.onclick = () => {
     if (!sendTextarea.value.trim()) {
         alert('enter your message')
     }
-   // sendTextarea.value = ''
 }
-
-////////contact
 openClose.onclick = (e) => { 
     
     //flip evg open arrows

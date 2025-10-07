@@ -13,6 +13,26 @@ import (
 
 func FirststateHandler(w http.ResponseWriter, r *http.Request) {
 	// Build confMap for response
+	// Her I Will Need To Protect It From The (-Notauthrized-)
+
+    if r.Method != http.MethodGet {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]any{
+            "status":  "error",
+            "message": "Method not allowed. Only GET is supported.",
+        })
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+	
+    accept := r.Header.Get("Accept")
+    if containsHTML(accept) {
+        // If browser wants HTML, redirect to unauthorized
+        http.Redirect(w, r, "/unauthorized", http.StatusSeeOther)
+        return
+    }
+
 	confMap := make(map[string]any)
 	confMap["fileds"] = repo.IT_MAJOR_FIELDS
 	// <====== USER AUTH ======>
