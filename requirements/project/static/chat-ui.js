@@ -6,18 +6,13 @@ import { updateTotalUnreadBadge } from "./chat-users.js"
 let messageOffset = 0;
 let lastMessageDate = null;
 
-
-
 // Start a chat with a specific user
 export async function startChatWithUser(username) {
-    console.log(`Starting chat with ${username}`);
     window.activeChatUsername = username;
-    
     // Clear unread count for this user immediately
     if (!window.unreadCounts) window.unreadCounts = new Map();
     const oldCount = window.unreadCounts.get(username) || 0;
     window.unreadCounts.set(username, 0);
-    
     // Update UI immediately
     const usersList = document.getElementById('chatUsersList');
     if (usersList) {
@@ -29,10 +24,7 @@ export async function startChatWithUser(username) {
             userItem.classList.remove('has-unread');
         }
     }
-    
     updateTotalUnreadBadge();
-    console.log(`📢 Cleared ${oldCount} notifications for ${username}`);
-    
     try {
         // Get current user info
         const currentUserRes = await fetch('/api/me');

@@ -17,7 +17,6 @@ import (
 
 func InitDependencies() {
 	db.InitDB(repo.DATABASE_LOCATION)
-	InitTemplate(repo.TEMPLATE_PATHS)
 	utils.InitRegex()
 }
 

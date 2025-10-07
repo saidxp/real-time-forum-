@@ -9,13 +9,11 @@ export function creatchatisland() {
     // Initialize global notification state
     if (!window.unreadCounts) window.unreadCounts = new Map();
     if (!window.userOrderOverrides) window.userOrderOverrides = new Map();
-    
     // Remove existing chat island if any
     const existingChatIsland = document.querySelector('.chat-island');
     if (existingChatIsland) {
         existingChatIsland.remove();
     }
-    
     const chatSection = document.createElement("div");
     chatSection.className = 'chat-island';
     chatSection.id = 'chatIsland';

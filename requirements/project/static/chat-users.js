@@ -11,7 +11,6 @@ window.testNotification = function(username) {
     addUnreadMessage(username);
     console.log(`Unread count for ${username}:`, window.unreadCounts.get(username));
 };
-
 // Test function to simulate message from another user
 window.simulateMessage = function(fromUser, message) {
     console.log(`Simulating message from ${fromUser}: ${message}`);

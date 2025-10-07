@@ -5,17 +5,13 @@ import { creatchatisland, showChatIsland } from "./chatisland.js"
 export async function homeBuild(user) {
   // Create floating chat island if user is authenticated
   if (user.authenticated) {
-    // createFloatingChatIsland((username) => {
-    //   // When user clicks on a username in the island
-    //   // loadChatUI(username);
-    // });
     creatchatisland()
     // Show the chat island after a short delay to ensure it's rendered
     setTimeout(() => {
       showChatIsland();
     }, 500);
-    
-  } 
+  }
+
   const HOWA = document.getElementById('chat-container')
   if (HOWA) {
     HOWA.remove()
@@ -106,7 +102,7 @@ export async function homeBuild(user) {
 
   actionsDiv.appendChild(postDiv);
 
-  // Auth/Profile section
+// Authenticated One !!
   if (user.authenticated) {
     const profileNav = createEl("nav", "profile-nav");
     profileNav.innerHTML = `
