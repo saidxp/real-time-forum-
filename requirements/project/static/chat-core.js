@@ -111,10 +111,8 @@ export function creatchatisland() {
                 window.currentUserId = user.userId || user.Id || user.id || user.ID;
                 setupGlobalNotifications();
             }
-        } catch (e) {
-            console.log('User not authenticated');
-        }
-    }).catch(err => console.log('User not authenticated'));
+        } catch (e) {}
+    }).catch(err => {});
 
     function setupGlobalNotifications() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -147,9 +145,7 @@ export function creatchatisland() {
             if (users) {
                 updateUsersList(users);
             }
-        }).catch(err => {
-            console.log('Rate limited, skipping refresh');
-        });
+        }).catch(err => {});
     }, 120000); // Increased to 2 minutes
 }
 
@@ -158,7 +154,7 @@ export function showChatIsland() {
     const chatIsland = document.getElementById('chatIsland');
     if (chatIsland) {
         chatIsland.classList.add('visible');
-        console.log('✅ Chat island shown');
+
     }
 }
 
@@ -167,7 +163,7 @@ export function hideChatIsland() {
     const chatIsland = document.getElementById('chatIsland');
     if (chatIsland) {
         chatIsland.classList.remove('visible');
-        console.log('🔒 Chat island hidden');
+
     }
 }
 
@@ -193,9 +189,7 @@ export function destroyChatIsland() {
     if (window.chatWebSocket) {
         try {
             window.chatWebSocket.close();
-        } catch (e) {
-            console.error('Error closing chat WebSocket:', e);
-        }
+        } catch (e) {}
         window.chatWebSocket = null;
     }
     
