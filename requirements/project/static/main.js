@@ -13,10 +13,18 @@ let currentPage = "login";
 // <=====>
 export function showErrorPage({
   title = "Page not found",
-  message = "",
-  statusCode = "",
-  statusText = ""
+  message = "This page not found",
+  statusCode = "404",
+  statusText = "Page not found"
 } = {}) {
+  
+if (!document.querySelector('link[href*="error-page.css"]')) {
+  const errorCSS = document.createElement('link');
+  errorCSS.rel = 'stylesheet';
+  errorCSS.href = 'static/css/error-page.css'; // Update path as needed
+  document.head.appendChild(errorCSS);
+}
+
   const main = document.querySelector(".main-content");
   if (!main) return;
 
