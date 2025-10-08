@@ -1,5 +1,3 @@
-import { showPage } from "./main.js";
-
 export async function POST(id, user, page = 1) {
 
   if (!document.querySelector('link[href*="post.css"]')) {
@@ -265,46 +263,58 @@ export function Create({ post, comments = [], user, footerEl, Pagination = null 
     });
   });
   // === <===> FORM SUBMIT TO DB <==> ===
+
+  // === <===> FORM SUBMIT TO DB <==> ===
   const formComment = document.querySelector("#form_comment");
 
   if (formComment) {
     formComment.addEventListener("submit", async (e) => {
       e.preventDefault();
-      let curent = Pagination.curent
-      let post_id = post.Id
+
+      let curent = Pagination.curent;
+      let post_id = post.Id;
       const formData = new FormData(formComment);
-      /// I Add To Object The Current Page !
-      formData.append("currentPage", curent)
-      //formData.append("Post_id", idPost)
+
+      // Add current page to form data
+      formData.append("currentPage", curent);
+
       try {
         const res = await fetch("/comment", { method: "POST", body: formData });
         if (!res.ok) throw new Error("Failed to submit comment");
         const newComment = await res.json();
 
-        // I Will Try Her When The User Is At Another
+        // If user is on another page, redirect to page 1
         if (newComment.no) {
-          await showPage("Post", user, idPost, 1);
-          sessionStorage.setItem("currentPage", "Post");
-          return
+          await POST(post_id, user, 1);
+          return;
         }
+
         const commentsList = document.querySelector(".comments-list");
+        const visible = commentsList.querySelectorAll(".commentcontainer");
+        const max = 10;
+
+        if (visible.length >= max) {
+          // Refresh the entire page to show updated pagination
+          await POST(post_id, user, curent);
+          return;
+        }
+
+        // If less than 10 comments, add the new one dynamically
         if (commentsList && newComment) {
           const node = createCommentNode(newComment);
           commentsList.prepend(node);
         }
-        const maxOnPage = 10;  // <<========>> \\Com
-        const visible = commentsList.querySelectorAll(".commentcontainer");
-        if (visible.length > maxOnPage) {
-          const last = visible[visible.length - 1];
-          last.closest(".container")?.remove();
-        }
-        const NOcoment = document.getElementById('Com')
+
+        // Remove "No comments yet" message if it exists
+        const NOcoment = document.getElementById('Com');
         if (NOcoment) {
-          NOcoment.remove()
+          NOcoment.remove();
         }
+
         formComment.reset();
       } catch (err) {
         console.error("Error submitting comment:", err);
+        alert("Failed to submit comment. Please try again.");
       }
     });
   }

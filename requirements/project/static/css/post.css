@@ -231,23 +231,22 @@ main .container {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 40px;
+  padding: var(--padding-md);
   border-radius: 12px;
   background-color: #ffffff;
   border: solid 1px var(--border-color);
   max-width: 80svw;
   margin: auto;
-  height: 8svh;
-  margin-block: 20px;
+  min-height: 60px;
+  margin-block: var(--padding-md);
 }
 
 .pagination__link {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--padding-sm);
 }
-
 header .profile-icon img {
   color: black;
 }
