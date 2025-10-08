@@ -1,6 +1,4 @@
-// <-------------------->
-// post.js (replace existing fetchPosts with this)
-// post.js — updated fetchPosts without like/dislike
+// evernt listners !!
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
   return String(str)
@@ -19,6 +17,7 @@ function el(tag, className = "", inner = "") {
 }
 
 export async function fetchPosts(filter = "", page=1) {
+
   try {
     //const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}`);
     const res = await fetch(`/api/posts?filter=${encodeURIComponent(filter)}&page=${page}`);
@@ -139,6 +138,7 @@ export async function fetchPosts(filter = "", page=1) {
     console.error("Failed to fetch posts:", err);
   }
 }
+
 function normalizePosts(data) {
   // her i will protect them from null posts And Not Condition IT's applicate !!
   if (!data) return [];

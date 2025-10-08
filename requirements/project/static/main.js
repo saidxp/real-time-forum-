@@ -1,5 +1,5 @@
-import {setupGlobalListeners} from "./addlistners.js"
-import {loginbuilding} from "./event.js"
+import { setupGlobalListeners } from "./addlistners.js"
+import { loginbuilding } from "./event.js"
 import { homeBuild } from "./buildhome.js";
 import { registerBuilding } from "./register.js";
 import { POST } from "./post.js";
@@ -11,19 +11,17 @@ let currentPage = "login";
 
 // Her I Will Need To Handle The Message Error !! 
 // <=====>
-  export function showErrorPage({ 
-    title = "Page not found", 
-    message = "", 
-    statusCode = "", 
-    statusText = "" 
-  } = {}) {
-    const main = document.querySelector(".main-content");
-    if (!main) return;
-  
-  
-    main.innerHTML = "";
-  
-    main.innerHTML = `
+export function showErrorPage({
+  title = "Page not found",
+  message = "",
+  statusCode = "",
+  statusText = ""
+} = {}) {
+  const main = document.querySelector(".main-content");
+  if (!main) return;
+
+  main.innerHTML = "";
+  main.innerHTML = `
       <div class="error-container">
         <h1 class="error-title">${title}</h1>
         <p class="error-message">${message}</p>
@@ -34,68 +32,68 @@ let currentPage = "login";
         <button id="Logo" class="home-button">Go Home</button>
       </div>
     `;
-  
-    // Update browser history to match the error page
-    if (title.includes("403")) {
-      window.history.replaceState({}, "", "/unauthorized");
-    } else if (title.includes("404")) {
-      window.history.replaceState({}, "", "/404");
-    } else if (title.includes("400")) {
-      window.history.replaceState({}, "", "/BadRequest");
-    } else if (title.includes("500")) {
-      window.history.replaceState({}, "", "/servererror");
-    } else if (title.includes("429")) {
-      window.history.replaceState({}, "", "/TooManyRequests");
-    }
-  
-    // Reattach global listeners
-    setupGlobalListeners();
-  }
-  
-export async function showPage(page, user, id, currentPage, targetUser = null) {
 
-    currentPage = page;
-    console.log("Current page:", currentPage, "Page param:", page);
+  // Update browser history to match the error page
+  if (title.includes("403")) {
+    window.history.replaceState({}, "", "/unauthorized");
+  } else if (title.includes("404")) {
+    window.history.replaceState({}, "", "/404");
+  } else if (title.includes("400")) {
+    window.history.replaceState({}, "", "/BadRequest");
+  } else if (title.includes("500")) {
+    window.history.replaceState({}, "", "/servererror");
+  } else if (title.includes("429")) {
+    window.history.replaceState({}, "", "/TooManyRequests");
+  }
+
+  // Reattach global listeners
+  setupGlobalListeners();
+}
+
+export async function showPage(page, user, id, currentPage) {
+
+  currentPage = page;
   
-    switch (page) {
-      case "unauthorized":
-        showErrorPage({
-          title: "403 - Not Authorized",
-          message: "This endpoint is only accessible from inside the app.",
-          statusCode: 403,
-          statusText: "Forbidden"
-        });
-        break;
-  
-      case "badrequest":
-        showErrorPage({
-          title: "400 - Bad Request",
-          message: "The request was invalid or cannot be processed.",
-          statusCode: 400,
-          statusText: "Bad Request"
-        });
-        break;
-  
-      case "servererror":
-        showErrorPage({
-          title: "500 - Internal Server Error",
-          message: "Something went wrong on our side. Please try again later.",
-          statusCode: 500,
-          statusText: "Internal Server Error"
-        });
-        break;
-  
-      case "toomanyrequests":
-        showErrorPage({
-          title: "429 - Too Many Requests",
-          message: "You have reached the maximum number of comments/posts allowed for today. Please try again later.",
-          statusCode: 429,
-          statusText: "Too Many Requests"
-        });
-        break;
-  
-      default:
-        console.log("Page not handled in showPage:", page);
+
+  switch (page) {
+    case "unauthorized":
+      showErrorPage({
+        title: "403 - Not Authorized",
+        message: "This endpoint is only accessible from inside the app.",
+        statusCode: 403,
+        statusText: "Forbidden"
+      });
+      break;
+
+    case "badrequest":
+      showErrorPage({
+        title: "400 - Bad Request",
+        message: "The request was invalid or cannot be processed.",
+        statusCode: 400,
+        statusText: "Bad Request"
+      });
+      break;
+
+    case "servererror":
+      showErrorPage({
+        title: "500 - Internal Server Error",
+        message: "Something went wrong on our side. Please try again later.",
+        statusCode: 500,
+        statusText: "Internal Server Error"
+      });
+      break;
+
+    case "toomanyrequests":
+      showErrorPage({
+        title: "429 - Too Many Requests",
+        message: "You have reached the maximum number of comments/posts allowed for today. Please try again later.",
+        statusCode: 429,
+        statusText: "Too Many Requests"
+      });
+      break;
+
+    default:
+      console.log("Page not handled in showPage:", page);
   }
 
   if (page === "login") {
@@ -107,7 +105,6 @@ export async function showPage(page, user, id, currentPage, targetUser = null) {
   } else if (page === "home") {
     const res = await fetch("/api/me");
     const user = await res.json();
-    console.log("howa ola machy hwa howa olahhe tahwa ")
     window.history.replaceState({}, "", "/home");
     await homeBuild(user);
   } else if (page === "createpost") {
@@ -119,16 +116,12 @@ export async function showPage(page, user, id, currentPage, targetUser = null) {
       id = sessionStorage.getItem("currentPostId");
     }
     if (id) {
-      
+
       POST(id, user);
     } else {
       console.error("No post ID available");
       await showPage("home", user);
     }
-  } else if (page === "Chat") {
-    // Load private chat UI with target user
-    // If no targetUser is provided, loadChatUI will show user selection
-    // await loadChatUI(targetUser);
   }
 
 }
@@ -149,12 +142,12 @@ window.onload = async () => {
 
   let user = { authenticated: false };
   try {
-    const res = await fetch("/api/me");  
+    const res = await fetch("/api/me");
     if (res.ok) user = await res.json();
   } catch (err) {
     console.error("Error fetching user:", err);
   }
-   const path = window.location.pathname;
+  const path = window.location.pathname;
   const validPages = {
     "/": "home",
     "/home": "home",
@@ -162,18 +155,13 @@ window.onload = async () => {
     "/register": "register",
     "/createpost": "createpost",
     "/Post": "Post",
-    "/chat": "Chat",
-    "/unauthorized": "unauthorized" , 
-    "/BadRequest" : "badrequest",
-    "/servererror" : "servererror",
-    "/TooManyRequests" : "toomanyrequests"
+    "/unauthorized": "unauthorized",
+    "/BadRequest": "badrequest",
+    "/servererror": "servererror",
+    "/TooManyRequests": "toomanyrequests"
   };
 
-  console.log("the current path")
-  console.log(path)
-  console.log("the <==========>")
   currentPage = validPages[path];
-  console.log(currentPage)
 
   if (!currentPage) {
     showErrorPage({
@@ -187,54 +175,12 @@ window.onload = async () => {
       currentPage = "home";
     }
   } else {
-    const authRequiredPages = ["home", "newpost", "Post", "Chat"];
+    const authRequiredPages = ["home", "newpost", "Post"];
     if (authRequiredPages.includes(currentPage)) {
       currentPage = "login";
-      console.log("ana hna")
     }
   }
-  //if (currentPage !== "unauthorized") {
-    //sessionStorage.setItem("currentPage", currentPage);
-  //}
-  const LAST = sessionStorage.getItem("currentPage")
-  console.log("------")
-  console.log(LAST)
-  console.log("=============")
   await showPage(currentPage, user);
   setupGlobalListeners(user);
 
 };
-function loadchatpart(){
-  const users = document.createElement(".chat-ui .contact");
-const slideOff = document.createElement(".upper");
-const msgsContainer = document.createElement(".chat-ui .msgs");
-const openClose = document.createElement('.open-close')
-const contactsContainer = document.createElement(".chat-ui .wrapper");
-const sendTextarea = document.createElement(".chat-ui .send textarea");
-
-slideOff.onclick = () => slidOff();
-
-users.forEach(
-  (elem) => (elem.onclick = (e) => msgsContainer.classList.toggle("slide-msgs"))
-);
-
-document.addEventListener("keyup", (e) =>
-  e.key == "Escape" ? slidOff() : null
-);
-
-const slidOff = () => msgsContainer.classList.remove("slide-msgs");
-
-sendBtn.onclick = () => {
-
-    if (!sendTextarea.value.trim()) {
-        alert('enter your message')
-    }
-}
-openClose.onclick = (e) => { 
-    
-    //flip evg open arrows
-    e.target.classList.toggle('flip')
-    ///open chat list
-    contactsContainer.parentElement.parentElement.classList.toggle('open-contact')
-}
-}

@@ -6,7 +6,6 @@ import { showPage } from "./main.js"
 export function setupGlobalListeners(User) {
   document.addEventListener("click", async (event) => {
     let target = event.target;
-    
     const filterLink = target.closest("a[data-filter]");
     if (filterLink) {
       event.preventDefault();
@@ -19,7 +18,6 @@ export function setupGlobalListeners(User) {
       return;
     }
     const POSTID = event.target.closest("a.readmore");
- 
     if (POSTID) {
       const res = await fetch("/api/me");
       const user = await res.json();
@@ -27,7 +25,7 @@ export function setupGlobalListeners(User) {
       await showPage("Post", user, postId);
       window.history.replaceState({}, "", "/Post");
       sessionStorage.setItem("currentPage", "Post");
-      console.log("Post open clicked!");
+      
     }
     if (!target) return;
     const id = target.id;
@@ -75,11 +73,11 @@ export function setupGlobalListeners(User) {
     if (userItem && userItem.dataset.username) {
       event.preventDefault();
       const username = userItem.dataset.username;
-      // Import and call setupPrivateChat
+      // Import And Call SetupPrivateChat <!-!> !
       try {
         const { setupPrivateChat } = await import('./chatui.js');
         const { currentSocket, setIntentionalSocketClose, setCurrentSocket } = await import('./chatState.js');
-        
+
         if (currentSocket) {
           setIntentionalSocketClose(true);
           currentSocket.close();

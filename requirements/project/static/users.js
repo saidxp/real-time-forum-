@@ -13,7 +13,6 @@ export async function loadAllUsers(){
             throw new Error(`Response status: ${response.status}`);
         }
         const result = await response.json();
-        console.log('All users:', result);
         return result;
     } catch (error) {
         console.error('Error loading all users:', error.message);
@@ -30,7 +29,6 @@ export async function loadOnlineUsers(){
             throw new Error(`Response status: ${response.status}`);
         }
         const result = await response.json();
-        console.log('Online users:', result);
         return result;
     } catch (error) {
         console.error('Error loading online users:', error.message);
@@ -46,7 +44,6 @@ export async function getCurrentUser(){
             throw new Error(`Response status: ${response.status}`);
         }
         const result = await response.json();
-        console.log('Current user:', result);
         return result;
     } catch (error) {
         console.error('Error loading current user:', error.message);
@@ -166,12 +163,9 @@ export function initUserWebSocket(onUsersUpdate) {
         });
         
         userWebSocket.addEventListener('close', (event) => {
-            console.log('User WebSocket closed:', event.code, event.reason);
-            
             // Attempt to reconnect
             if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 reconnectAttempts++;
-                console.log(`🔄 Reconnecting... Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
                 setTimeout(() => {
                     initUserWebSocket(onUsersUpdate);
                 }, RECONNECT_DELAY);

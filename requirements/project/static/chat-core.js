@@ -1,4 +1,4 @@
-import { loadUsersWithStatus, initUserWebSocket, closeUserWebSocket, getUserWebSocketStatus } from "./users.js"
+import { loadUsersWithStatus, initUserWebSocket, closeUserWebSocket} from "./users.js"
 import { updateUsersList, updateWebSocketStatus } from "./chat-users.js"
 
 // Store interval IDs for cleanup

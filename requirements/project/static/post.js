@@ -1,8 +1,7 @@
 import { showPage } from "./main.js";
 
-export async function POST(id, user, page=1) {
+export async function POST(id, user, page = 1) {
 
-  // <link rel="stylesheet" href="/static/css/post.css"> </link>
   if (!document.querySelector('link[href*="post.css"]')) {
     const link = document.createElement('link');
     link.id = "cssPOST"
@@ -47,15 +46,15 @@ export async function POST(id, user, page=1) {
   if (main) main.innerHTML = `<p style="text-align:center; margin:2rem;">Loading post...</p>`;
 
   try {
-    const res = await fetch(`/post?Id=${id}&page=${page}`, {method : "GET"});
+    const res = await fetch(`/post?Id=${id}&page=${page}`, { method: "GET" });
     if (!res.ok) throw new Error("Failed to fetch post");
     const data = await res.json();
 
     const Pagination = {
-    "curent" : data.currentPage ,
-    "hasNext" : data.hasNext,
-    "hasprev" : data.hasPrev,
-    "hasnext" : data.nextPage
+      "curent": data.currentPage,
+      "hasNext": data.hasNext,
+      "hasprev": data.hasPrev,
+      "hasnext": data.nextPage
     }
 
     Create({
@@ -72,7 +71,7 @@ export async function POST(id, user, page=1) {
 }
 
 // ==================={{ Create Post <!> }}===================
-export function Create({ post, comments = [],user, footerEl, Pagination=null}) {
+export function Create({ post, comments = [], user, footerEl, Pagination = null }) {
 
   const main = document.querySelector('.main-content');
   const mobileHeader = document.querySelector('.mobileHeader');
@@ -122,7 +121,7 @@ export function Create({ post, comments = [],user, footerEl, Pagination=null}) {
     </div>
   `;
 
-const commentFormHTML = `
+  const commentFormHTML = `
     <div class="containercomment">
       <form id="form_comment" action="#" method="POST">
         <input type="hidden" name="post_id" value="${post.Id}">
@@ -152,34 +151,34 @@ const commentFormHTML = `
     paginationHTML = `
       <div class="container">
         <nav class="pagination" aria-label="Pagination navigation">
-          ${Pagination.hasprev ? 
-            `<button class="pagination__link pagination__link--prev pagination-btn" 
+          ${Pagination.hasprev ?
+        `<button class="pagination__link pagination__link--prev pagination-btn" 
                      data-page="${Pagination.curent - 1}" 
                      data-post-id="${post.Id}" 
                      aria-label="Previous page">
                <img src="/static/svg/left.svg" alt="previous page"> Previous Page
-             </button>` : 
-            `<span class="pagination__link pagination__link--prev" aria-label="Previous page" style="opacity: .3;">
+             </button>` :
+        `<span class="pagination__link pagination__link--prev" aria-label="Previous page" style="opacity: .3;">
                <img src="/static/svg/left.svg" alt="previous page">
              </span>`
-          }
+      }
           <span class="pagination__current" aria-current="page">Page ${Pagination.curent}</span>
-          ${Pagination.hasNext ? 
-            `<button class="pagination__link pagination__link--next pagination-btn" 
+          ${Pagination.hasNext ?
+        `<button class="pagination__link pagination__link--next pagination-btn" 
                      data-page="${Pagination.curent + 1}" 
                      data-post-id="${post.Id}" 
                      aria-label="Next page">
                Next Page <img src="/static/svg/right.svg" alt="next page">
-             </button>` : 
-            `<span class="pagination__link pagination__link--next" aria-label="Next page" style="opacity: .3;">
+             </button>` :
+        `<span class="pagination__link pagination__link--next" aria-label="Next page" style="opacity: .3;">
                <img src="/static/svg/right.svg" alt="next page">
              </span>`
-          }
+      }
         </nav>
       </div>
     `;
   }
-  
+
   if (main) main.innerHTML = postHTML + commentFormHTML + `<div class="comments-list">${commentsHTML}</div>` + paginationHTML;
 
   const likeForm = document.querySelector('#likes_dislikes form[action="/like"]');
@@ -197,7 +196,7 @@ const commentFormHTML = `
         if (!res.ok) throw new Error('Failed to submit like');
         const result = await res.json();
         updateLikeDislikeUI(result.data);
-        
+
       } catch (err) {
         console.error('Error submitting like:', err);
         alert('Failed to like post. Please try again.');
@@ -217,13 +216,13 @@ const commentFormHTML = `
         if (!res.ok) throw new Error('Failed to submit dislike');
         const result = await res.json();
         updateLikeDislikeUI(result.data);
-        
+
       } catch (err) {
         console.error('Error submitting dislike:', err);
         alert('Failed to dislike post. Please try again.');
       }
     });
-}
+  }
 
   // <===>
   function updateLikeDislikeUI(result) {
@@ -250,20 +249,20 @@ const commentFormHTML = `
       <p>&copy; 2025 FORUM — Built with 💙 by the Forum Team</p>
     </div>`;
   }
-    // <=====> Add event listeners for pagination buttons <=====>
-    const paginationBtns = document.querySelectorAll('.pagination-btn');
-    paginationBtns.forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const page = parseInt(btn.dataset.page);
-        const postId = btn.dataset.postId;
-        if (main) {
-          // styling loading 
-          main.innerHTML = `<p style="text-align:center; margin:2rem;">Loading page ${page}...</p>`;
-        }
-        /// HER I WILL USE SHOW PAGE FOR REFRECH HANDLING !!
-        await POST(postId, user, page);
-      });
+  // <=====> Add event listeners for pagination buttons <=====>
+  const paginationBtns = document.querySelectorAll('.pagination-btn');
+  paginationBtns.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const page = parseInt(btn.dataset.page);
+      const postId = btn.dataset.postId;
+      if (main) {
+        // styling loading 
+        main.innerHTML = `<p style="text-align:center; margin:2rem;">Loading page ${page}...</p>`;
+      }
+      /// HER I WILL USE SHOW PAGE FOR REFRECH HANDLING !!
+      await POST(postId, user, page);
+    });
   });
   // === <===> FORM SUBMIT TO DB <==> ===
   const formComment = document.querySelector("#form_comment");
@@ -275,7 +274,7 @@ const commentFormHTML = `
       let post_id = post.Id
       const formData = new FormData(formComment);
       /// I Add To Object The Current Page !
-      formData.append("currentPage" ,curent)
+      formData.append("currentPage", curent)
       //formData.append("Post_id", idPost)
       try {
         const res = await fetch("/comment", { method: "POST", body: formData });
@@ -283,13 +282,11 @@ const commentFormHTML = `
         const newComment = await res.json();
 
         // I Will Try Her When The User Is At Another
-        if (newComment.no){
+        if (newComment.no) {
           await showPage("Post", user, idPost, 1);
           sessionStorage.setItem("currentPage", "Post");
           return
         }
-
-        console.log(newComment)
         const commentsList = document.querySelector(".comments-list");
         if (commentsList && newComment) {
           const node = createCommentNode(newComment);
@@ -305,10 +302,6 @@ const commentFormHTML = `
         if (NOcoment) {
           NOcoment.remove()
         }
-        //addCommentToPage(newComment);
-        console.log("===== Her the response from the server ")
-        console.log(newComment)
-        console.log("====================")
         formComment.reset();
       } catch (err) {
         console.error("Error submitting comment:", err);

@@ -32,8 +32,6 @@ export async function startChatWithUser(username) {
         window.currentUsername = currentUser.Username || currentUser.username;
         window.currentUserId = currentUser.userId || currentUser.Id || currentUser.id || currentUser.ID;
         
-        console.log('Current user info:', { currentUsername: window.currentUsername, currentUserId: window.currentUserId, fullUser: currentUser });
-        
         // Get target user ID
         const targetUserRes = await fetch(`/api/user-by-username?username=${encodeURIComponent(username)}`);
         if (!targetUserRes.ok) {

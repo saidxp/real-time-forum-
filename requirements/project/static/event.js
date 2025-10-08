@@ -129,7 +129,6 @@ export async function loginbuilding(user) {
       });
 
       const result = await res.json();
-      console.log(result)
       if (res.ok && result.status === "ok") {
         errorMessage.style.display = "none";
         if (mobileHeader) {
@@ -155,7 +154,6 @@ export async function loginbuilding(user) {
     } catch (err) {
       errorMessage.style.display = "block";
       errorMessage.textContent = "Server error. Try again later.";
-      console.error(err);
     }
   });
 }
@@ -178,14 +176,10 @@ export async function Logoutfunc() {
       const user = await res.json();
       await showPage("login", user)
       sessionStorage.setItem("currentPage", "login")
-      
-      //await loginbuilding()
     } else {
-      console.error("Logout error:", data.error);
       alert("Logout failed: " + data.error);
     }
   } catch (err) {
-    console.error("Logout failed:", err);
     alert("Something went wrong while logging out ..........");
   }
 }

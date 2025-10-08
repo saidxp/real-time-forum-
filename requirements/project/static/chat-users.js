@@ -7,29 +7,20 @@ if (!window.unreadCounts) window.unreadCounts = new Map();
 
 // Test function to verify notifications work
 window.testNotification = function(username) {
-    console.log(`Testing notification for ${username}`);
     addUnreadMessage(username);
-    console.log(`Unread count for ${username}:`, window.unreadCounts.get(username));
 };
 // Test function to simulate message from another user
 window.simulateMessage = function(fromUser, message) {
-    console.log(`Simulating message from ${fromUser}: ${message}`);
-    
     // Only add notification if not from active chat
     if (fromUser !== window.activeChatUsername) {
         addUnreadMessage(fromUser);
         znotif(fromUser);
-        console.log(`📢 Added notification for ${fromUser}`);
-    } else {
-        console.log(`📢 Message from active chat, no notification`);
     }
-    
     updateTotalUnreadBadge();
 };
 
 // Quick test function
 window.testNotificationPopup = function() {
-    console.log('Testing notification popup...');
     znotif('TestUser');
 };
 
@@ -191,27 +182,18 @@ export function updateUserListOrder(username, lastMessage) {
 }
 
 export function addUnreadMessage(senderName) {
-    console.log(`🔔 addUnreadMessage called for: ${senderName}`);
-    
     // Initialize unreadCounts if not exists
     if (!window.unreadCounts) window.unreadCounts = new Map();
-    
     // Skip if currently chatting with this person
     if (senderName === window.activeChatUsername) {
-        console.log(`❌ Skipping - active chat with: ${senderName}`);
         return;
     }
-    
     const current = window.unreadCounts.get(senderName) || 0;
     const newCount = current + 1;
     window.unreadCounts.set(senderName, newCount);
-    console.log(`✅ Notification added! ${senderName}: ${newCount} unread`);
-    
     // Immediately update UI
     updateUserBadge(senderName);
     updateTotalUnreadBadge();
-    
-    console.log(`📢 UI updated for ${senderName}`);
 }
 
 function updateUserBadge(username) {
@@ -236,11 +218,9 @@ function updateUserBadge(username) {
         }
         badge.textContent = count;
         userItem.classList.add('has-unread');
-        console.log(`📢 Updated badge for ${username}: ${count}`);
     } else {
         if (badge) badge.remove();
         userItem.classList.remove('has-unread');
-        console.log(`📢 Cleared badge for ${username}`);
     }
 }
 
@@ -254,8 +234,6 @@ export function updateTotalUnreadBadge() {
             totalUnread += count;
         }
     }
-    
-    console.log(`Total unread messages: ${totalUnread}`);
     if (totalUnread > 0) {
         totalBadge.textContent = totalUnread;
         totalBadge.style.display = 'inline';

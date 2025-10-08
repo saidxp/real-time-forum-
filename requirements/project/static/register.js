@@ -100,7 +100,7 @@ export async function registerBuilding(user) {
     <input type="submit" value="Register" />
     <p>Already have an account? <a href="#" id="Login"> Login here</a></p>
   `;
-
+  
   container.appendChild(form);
 
   const footer = createEl("footer", "footer");
@@ -113,12 +113,13 @@ export async function registerBuilding(user) {
   if (mainContent) mainContent.appendChild(container);
   if (footerContainer) footerContainer.appendChild(footer);
 
-  const errorMessage = document.getElementById("errorMessage");
-
+  //form.appendChild(errorMessage)
   // form submit handler
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
+    const errorMessage = document.getElementById("errorMessage");
+    errorMessage.style.display = "none";
+    errorMessage.textContent = "";
     const username = document.getElementById("username").value;
     const age = document.getElementById("age").value;
     const gender = document.getElementById("gender").value;
@@ -132,7 +133,6 @@ export async function registerBuilding(user) {
       errorMessage.textContent = "Passwords do not match.";
       return;
     }
-    //console.log({ username, age , gender, firstName, lastName, email, password, confirmpassword });
     try {
       const res = await fetch("/register", {
         method: "POST",
@@ -163,7 +163,6 @@ export async function registerBuilding(user) {
     } catch (err) {
       errorMessage.style.display = "block";
       errorMessage.textContent = "Server error. Try again later.";
-      console.error(err);
     }
   });
 }

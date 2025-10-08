@@ -153,7 +153,6 @@ export async function NewPost(categories = [], user) {
         return;
       }
       // Redirect To Home When The User Created The Post !!
-      console.log("Post created:", data);
       errorMessage.style.display = "none";
       const Stat = await fetch("/api/me");
       const user = await Stat.json();

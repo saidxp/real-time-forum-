@@ -11,7 +11,7 @@ import (
 )
 
 func SubmitRegister(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("SubmitRegister called")
+
 	var input struct {
     Username        string `json:"username"`
     Age             int    `json:"age"`
@@ -21,7 +21,7 @@ func SubmitRegister(w http.ResponseWriter, r *http.Request) {
     Email           string `json:"email"`
     Password        string `json:"password"`
     ConfirmPassword string `json:"confirmpassword"`
-}
+	}
 
 	// Parse JSON
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -39,10 +39,9 @@ func SubmitRegister(w http.ResponseWriter, r *http.Request) {
 		input.Password = r.FormValue("password")
 		input.ConfirmPassword = r.FormValue("confirmpassword")
 	}	
-	fmt.Printf("%v\n", input.Username)
-	// === validation ===
-	if !utils.ValidUsername(input.Username) {
-		http.Error(w, `{"status":"error","message":"Invalid username"}`, http.StatusBadRequest)
+	// === Validation ===
+	if !utils.ValidUsername(input.Username) || !utils.ValidUsername(input.FirstName) || !utils.ValidUsername(input.LastName) {
+		http.Error(w, `{"status":"error","message":"Invalid nickname or Name or last name"}`, http.StatusBadRequest)
 		return
 	}
 	if !utils.ValidEmail(input.Email) {
@@ -57,24 +56,24 @@ func SubmitRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"status":"error","message":"Passwords do not match"}`, http.StatusBadRequest)
 		return
 	}
-
-	// hash password
+	// Hash password
 	hash, err := utils.HashPassword(input.Password)
 	if err != nil {
 		http.Error(w, `{"status":"error","message":"Server error"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// insert into DB
+	// Insert Into DB
 	err = db.AddNewUser(
 		input.Username,
 		input.Email,
-			hash,
-			input.FirstName,
-			input.LastName,
+		hash,
+		input.FirstName,
+		input.LastName,
 		input.Gender,
 		input.Age,		 
 	)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			http.Error(w, `{"status":"error","message":"username or email already used"}`, http.StatusConflict)
@@ -84,7 +83,7 @@ func SubmitRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// success response
+	// Success Response ...
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{
