@@ -244,6 +244,11 @@ export function updateTotalUnreadBadge() {
 
 
 export function showNotification(username) {
+
+    if (!window.chatWebSocket || window.chatWebSocket.readyState !== WebSocket.OPEN) {
+        return;
+    }
+    
     // Create popup
     const popup = document.createElement('div');
     popup.style.cssText = 'position:fixed;top:20px;right:20px;background:white;padding:15px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;border-left:4px solid #2563eb';
