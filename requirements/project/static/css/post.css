@@ -225,28 +225,61 @@ main .container {
 }
 
 /* pagination section */
-
-.pagination {
+/* === Pagination Container === */
+.post-nav-container {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--padding-md);
-  border-radius: 12px;
-  background-color: #ffffff;
-  border: solid 1px var(--border-color);
-  max-width: 80svw;
-  margin: auto;
-  min-height: 60px;
-  margin-block: var(--padding-md);
-}
-
-.pagination__link {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: var(--padding-sm);
+  margin: 2rem 0;
 }
+
+/* === Main Wrapper === */
+.post-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+/* === Buttons and Spans === */
+.post-nav__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.post-nav__btn img {
+  width: 16px;
+  height: 16px;
+}
+
+/* === Hover Effect === */
+.post-nav__action:hover {
+  background: #ececec;
+  border-color: #ccc;
+}
+
+/* === Disabled State === */
+.post-nav__btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f3f3f3;
+  border-color: #e0e0e0;
+}
+
+/* === Current Page Indicator === */
+.post-nav__status {
+  font-weight: bold;
+  color: #333;
+  font-size: 1rem;
+}
+
 header .profile-icon img {
   color: black;
 }
