@@ -76,6 +76,8 @@ func forumMux() *http.ServeMux {
 	forumux.HandleFunc("/static/", handler.StaticHandler)
 	// WebSocket endpoint for private chat (protected)
 	forumux.HandleFunc("/room", hub.ServeWs)
+	// WebSocket endpoint for global notifications
+	forumux.HandleFunc("/notifications", hub.ServeNotifications)
 	forumux.HandleFunc("/", middleware.InjectUser(handler.RootHandler))
 	return forumux
 }

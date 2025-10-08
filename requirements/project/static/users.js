@@ -159,7 +159,7 @@ export function initUserWebSocket(onUsersUpdate) {
         });
         
         userWebSocket.addEventListener('error', (error) => {
-            console.error('❌ User WebSocket error:', error);
+            console.error(' User WebSocket error:', error);
         });
         
         userWebSocket.addEventListener('close', (event) => {
@@ -170,7 +170,7 @@ export function initUserWebSocket(onUsersUpdate) {
                     initUserWebSocket(onUsersUpdate);
                 }, RECONNECT_DELAY);
             } else {
-                console.log('❌ Max reconnection attempts reached');
+                console.log(' Max reconnection attempts reached');
             }
         });
         

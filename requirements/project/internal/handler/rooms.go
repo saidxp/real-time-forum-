@@ -8,67 +8,58 @@ import (
 	"strings"
 	"time"
 
-	// auth "forum/internal/auth"
 	db "forum/internal/db"
 
 	"github.com/gorilla/websocket"
 )
 
-// Hub manages all rooms
 type Hub struct {
-	Rooms       map[string]*room
-	globalUsers map[string]*user // Make this exported so it can be accessed
+	Rooms            map[string]*room
+	globalUsers      map[string]*user 
+	notificationUsers map[string]*user 
 }
 
 // Create a new Hub
 func NewHub() *Hub {
 	h := &Hub{
-		Rooms:       make(map[string]*room),
-		globalUsers: make(map[string]*user),
+		Rooms:            make(map[string]*room),
+		globalUsers:      make(map[string]*user),
+		notificationUsers: make(map[string]*user),
 	}
 	go h.run()
 	return h
 }
 
-// run handles global user events and broadcasts
 func (h *Hub) run() {
-	// No longer broadcasting user lists via WebSocket
-	// Users stay online based on session, not WebSocket connection
+	
 }
 
-// broadcastUsersToAllRooms sends user list to all rooms including private chats
 func (h *Hub) broadcastUsersToAllRooms() {
-	// No longer broadcasting - users stay online based on session
 }
 
 func (h *Hub) broadcastGlobalUsers() {
-	// No longer broadcasting - users stay online based on session
 }
 
-// BroadcastToAllRooms sends a message to all rooms
 func (h *Hub) BroadcastToAllRooms(message []byte) {
 	for _, room := range h.Rooms {
 		select {
 		case room.forward <- message:
 		default:
-			// Room channel is full, skip
 		}
 	}
 }
 
-// CreatePrivateRoomName creates a consistent room name for two users
 func CreatePrivateRoomName(user1, user2 string) string {
 	users := []string{user1, user2}
-	sort.Strings(users) // Always sort to ensure consistent room names
+	sort.Strings(users) 
 	return "private_" + strings.Join(users, "_")
 }
 
-// GetRoom returns an existing room or creates a new one
 func (h *Hub) GetRoom(name string) *room {
 	if r, ok := h.Rooms[name]; ok {
 		return r
 	}
-	r := NewRoom(name, h) // Pass room name and hub reference
+	r := NewRoom(name, h) 
 	h.Rooms[name] = r
 	go r.Run()
 	return r
@@ -80,8 +71,8 @@ type room struct {
 	join    chan *user
 	leave   chan *user
 	forward chan []byte
-	name    string // Store room name
-	hub     *Hub   // Reference to hub for global notifications
+	name    string 
+	hub     *Hub   
 }
 
 // Create a new Room with name
@@ -123,7 +114,7 @@ func (r *room) Run() {
 		case msg := <-r.forward:
 			var chatMsg ChatMessageData
 			if err := json.Unmarshal(msg, &chatMsg); err == nil {
-				log.Printf("✅ Processing message in room %s: %+v", r.name, chatMsg)
+				log.Printf(" Processing message in room %s: %+v", r.name, chatMsg)
 
 				switch chatMsg.Type {
 				case "message":
@@ -145,22 +136,14 @@ func (r *room) Run() {
 							}
 							receiverID := r.getUserIDByUsername(receiverName)
 
-							log.Printf("💬 Sender: %s (ID: %d), Receiver: %s (ID: %d)",
-								chatMsg.Name, senderID, receiverName, receiverID)
-
 							if senderID <= 0 || receiverID <= 0 {
-								log.Printf("❌ Invalid user IDs - skipping save")
 								// Still forward the message even if save fails
 								break
 							}
 
 							// Save message to database
 							err := db.SaveChatMessage(senderID, receiverID, chatMsg.Message)
-							if err != nil {
-								log.Printf("❌ Error saving message: %v", err)
-							} else {
-								log.Printf("✅ Message saved successfully")
-
+							if err == nil {
 								// IMPORTANT: Retrieve the saved message to get the created_at timestamp
 								messages, err := db.GetChatMessages(senderID, receiverID, 1, 0)
 								if err == nil && len(messages) > 0 {
@@ -171,11 +154,19 @@ func (r *room) Run() {
 										msg = updatedMsg
 									}
 								}
+								
+								// Send notification to receiver if they're connected for notifications
+								if notifUser, exists := r.hub.notificationUsers[receiverName]; exists {
+									select {
+									case notifUser.recieve <- msg:
+									default:
+									}
+								}
 							}
 						}
 					}
 				case "typing", "stop_typing":
-					log.Printf("⌨️ Typing indicator: %s from %s", chatMsg.Type, chatMsg.Name)
+					log.Printf("Typing indicator: %s from %s", chatMsg.Type, chatMsg.Name)
 				}
 			}
 
@@ -183,9 +174,9 @@ func (r *room) Run() {
 			for usr := range r.users {
 				select {
 				case usr.recieve <- msg:
-					log.Printf("✅ Message forwarded to user %s", usr.name)
+					log.Printf(" Message forwarded to user %s", usr.name)
 				default:
-					log.Printf("⚠️ User %s channel full, message dropped", usr.name)
+					log.Printf(" User %s channel full, message dropped", usr.name)
 				}
 			}
 		}
@@ -327,6 +318,36 @@ func (h *Hub) ServeWs(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		r.leave <- user
 		delete(h.globalUsers, user.name)
+	}()
+
+	go user.write()
+	user.read()
+}
+
+// ServeNotifications handles WebSocket connections for global notifications
+func (h *Hub) ServeNotifications(w http.ResponseWriter, req *http.Request) {
+	username := req.URL.Query().Get("username")
+	if username == "" {
+		http.Error(w, "Username required", http.StatusBadRequest)
+		return
+	}
+
+	socket, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		return
+	}
+
+	user := &user{
+		name:    username,
+		socket:  socket,
+		recieve: make(chan []byte, messageBuffersize),
+	}
+
+	h.notificationUsers[username] = user
+
+	defer func() {
+		delete(h.notificationUsers, username)
+		socket.Close()
 	}()
 
 	go user.write()

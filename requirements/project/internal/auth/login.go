@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	db "forum/internal/db"
 	forumerror "forum/internal/error"
 
@@ -12,7 +11,7 @@ import (
 	"time"
 )
 
-var OnlineUsers = make(map[int]string) 
+var OnlineUsers = make(map[int]string)
 
 func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 
@@ -22,7 +21,7 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		 
+
 		return
 	}
 	username := payload.Username
@@ -54,7 +53,12 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("im at before token")
+	actualUsername, err := db.GetUserNameById(userId)
+	if err != nil {
+		forumerror.InternalServerError(w, r, err)
+		return
+	}
+
 	session := GenerateToken(32)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
@@ -63,21 +67,19 @@ func SubmitLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
-	fmt.Println("im her after i update session")
 	err = db.UpdateUserSession(userId, session)
 	if err != nil {
 		forumerror.InternalServerError(w, r, err)
 		return
 	}
-    fmt.Println(username)
-    // 
-	OnlineUsers[userId] = username
-	BroadcastUserJoined(username) // Broadcast specific user joined event
-	BroadcastUsers() // Also broadcast full user list
+
+	OnlineUsers[userId] = actualUsername
+	BroadcastUserJoined(actualUsername) 
+	BroadcastUsers()                    
 
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":   "ok",
-		"username": username,
+		"username": actualUsername,
 		"userId":   userId,
 		"token":    session,
 	})

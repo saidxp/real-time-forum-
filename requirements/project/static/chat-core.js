@@ -116,7 +116,7 @@ export function creatchatisland() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
         const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
-        const wsUrl = `${protocol}//${host}:${port}/room?user1=${window.currentUsername}&user2=*&username=${window.currentUsername}`;
+        const wsUrl = `${protocol}//${host}:${port}/notifications?username=${encodeURIComponent(window.currentUsername)}`;
         
         window.globalWS = new WebSocket(wsUrl);
         
