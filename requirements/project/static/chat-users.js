@@ -244,24 +244,25 @@ export function updateTotalUnreadBadge() {
 
 
 export function showNotification(username) {
-
-    if (!window.chatWebSocket || window.chatWebSocket.readyState !== WebSocket.OPEN) {
-        return;
-    }
+    // Only keep badge notifications - all popup and browser notifications commented out
     
-    // Create popup
-    const popup = document.createElement('div');
-    popup.style.cssText = 'position:fixed;top:20px;right:20px;background:white;padding:15px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;border-left:4px solid #2563eb';
-    popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">💬</span><div><strong>${username}</strong><br><small>New message</small></div><button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer">×</button></div>`;
-    document.body.appendChild(popup);
-    setTimeout(() => popup.remove(), 4000);
+    // if (!window.chatWebSocket || window.chatWebSocket.readyState !== WebSocket.OPEN) {
+    //     return;
+    // }
     
-    // Desktop notification
-    if (Notification.permission === 'granted') {
-        new Notification(`New message from ${username}`);
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission();
-    }
+    // Create popup - commented out
+    // const popup = document.createElement('div');
+    // popup.style.cssText = 'position:fixed;top:20px;right:20px;background:white;padding:15px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;border-left:4px solid #2563eb';
+    // popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">💬</span><div><strong>${username}</strong><br><small>New message</small></div><button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer">×</button></div>`;
+    // document.body.appendChild(popup);
+    // setTimeout(() => popup.remove(), 4000);
+    
+    // Desktop notification - commented out
+    // if (Notification.permission === 'granted') {
+    //     new Notification(`New message from ${username}`);
+    // } else if (Notification.permission !== 'denied') {
+    //     Notification.requestPermission();
+    // }
 }
 
 window.testNotification = () => showNotification('TestUser');

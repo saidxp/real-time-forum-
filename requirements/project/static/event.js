@@ -1,7 +1,7 @@
 //import { homeBuild } from "./buildhome.js";
 //import { Addeventlistnerandpost } from "./setevrntlisnter.js";
 import { showPage } from "./main.js";
-import{creatchatisland} from "./chatisland.js"
+import{creatchatisland} from "./chat-core.js"
 // import { destroyFloatingChatIsland } from "./ChatIsland.js";
 
 export async function loginbuilding(user) {
@@ -136,7 +136,7 @@ export async function loginbuilding(user) {
           mobileHeader.style.display = "none";
         }
         const css = document.getElementById('Csslogin')
-        const css1 = document.getElementById('"css"')
+        const css1 = document.getElementById('css')
         if (css) {
         css.remove()
         }
@@ -159,7 +159,12 @@ export async function loginbuilding(user) {
 }
 
 export async function Logoutfunc() {
-  // ! <===|===> ! \\ 
+  // Close all WebSocket connections before logout
+  if (window.chatWebSocket) {
+    window.chatWebSocket.close();
+    window.chatWebSocket = null;
+  }
+  
   try {
     const response = await fetch("/logout", {
       method: "POST",
