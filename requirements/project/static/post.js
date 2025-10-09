@@ -147,34 +147,35 @@ export function Create({ post, comments = [], user, footerEl, Pagination = null 
   let paginationHTML = '';
   if (Pagination) {
     paginationHTML = `
-      <div class="container">
-        <nav class="pagination" aria-label="Pagination navigation">
-          ${Pagination.hasprev ?
-        `<button class="pagination__link pagination__link--prev pagination-btn" 
+  <div class="post-nav-container">
+    <nav class="post-nav" aria-label="Pagination navigation">
+      ${Pagination.hasprev ?
+        `<button class="post-nav__btn post-nav__btn--prev post-nav__action" 
                      data-page="${Pagination.curent - 1}" 
                      data-post-id="${post.Id}" 
                      aria-label="Previous page">
                <img src="/static/svg/left.svg" alt="previous page"> Previous Page
              </button>` :
-        `<span class="pagination__link pagination__link--prev" aria-label="Previous page" style="opacity: .3;">
+        `<span class="post-nav__btn post-nav__btn--prev post-nav__btn--disabled" aria-label="Previous page">
                <img src="/static/svg/left.svg" alt="previous page">
              </span>`
       }
-          <span class="pagination__current" aria-current="page">Page ${Pagination.curent}</span>
-          ${Pagination.hasNext ?
-        `<button class="pagination__link pagination__link--next pagination-btn" 
+      <span class="post-nav__status" aria-current="page">Page ${Pagination.curent}</span>
+      ${Pagination.hasNext ?
+        `<button class="post-nav__btn post-nav__btn--next post-nav__action" 
                      data-page="${Pagination.curent + 1}" 
                      data-post-id="${post.Id}" 
                      aria-label="Next page">
                Next Page <img src="/static/svg/right.svg" alt="next page">
              </button>` :
-        `<span class="pagination__link pagination__link--next" aria-label="Next page" style="opacity: .3;">
+        `<span class="post-nav__btn post-nav__btn--next post-nav__btn--disabled" aria-label="Next page">
                <img src="/static/svg/right.svg" alt="next page">
              </span>`
       }
-        </nav>
-      </div>
-    `;
+    </nav>
+  </div>
+`;
+
   }
 
   if (main) main.innerHTML = postHTML + commentFormHTML + `<div class="comments-list">${commentsHTML}</div>` + paginationHTML;
@@ -248,7 +249,7 @@ export function Create({ post, comments = [], user, footerEl, Pagination = null 
     </div>`;
   }
   // <=====> Add event listeners for pagination buttons <=====>
-  const paginationBtns = document.querySelectorAll('.pagination-btn');
+  const paginationBtns = document.querySelectorAll('.post-nav__action');
   paginationBtns.forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
